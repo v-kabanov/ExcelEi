@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelEi", "ExcelEi\ExcelEi.csproj", "{002CBF93-DF5C-436F-899F-83D0339FE3D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelEi.Test", "ExcelEi.Test\ExcelEi.Test.csproj", "{2CF7442F-2D7A-4E1B-BB8F-4F70D1A64808}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{002CBF93-DF5C-436F-899F-83D0339FE3D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{002CBF93-DF5C-436F-899F-83D0339FE3D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{002CBF93-DF5C-436F-899F-83D0339FE3D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{002CBF93-DF5C-436F-899F-83D0339FE3D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CF7442F-2D7A-4E1B-BB8F-4F70D1A64808}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CF7442F-2D7A-4E1B-BB8F-4F70D1A64808}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CF7442F-2D7A-4E1B-BB8F-4F70D1A64808}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CF7442F-2D7A-4E1B-BB8F-4F70D1A64808}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

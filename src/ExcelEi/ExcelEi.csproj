@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{002CBF93-DF5C-436F-899F-83D0339FE3D8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ExcelEi</RootNamespace>
+    <AssemblyName>ExcelEi</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AutoMapper, Version=6.2.2.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\packages\AutoMapper.6.2.2\lib\net45\AutoMapper.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EPPlus, Version=4.1.1.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>..\packages\EPPlus.4.1.1\lib\net40\EPPlus.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ExcelDataReader, Version=3.3.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDataReader.3.3.0\lib\net45\ExcelDataReader.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ExcelDataReader.DataSet, Version=3.3.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDataReader.DataSet.3.3.0\lib\net45\ExcelDataReader.DataSet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Read\AdoDataTableRowReader.cs" />
+    <Compile Include="Read\AdoNetDataTableAdapter.cs" />
+    <Compile Include="Read\AdoTableReader.cs" />
+    <Compile Include="Read\AdoTableRowReaderCollection.cs" />
+    <Compile Include="Check.cs" />
+    <Compile Include="Read\Conversion.cs" />
+    <Compile Include="Write\DataColumnExportAutoConfig.cs" />
+    <Compile Include="Read\DataColumnSource.cs" />
+    <Compile Include="Read\DataSetAdapter.cs" />
+    <Compile Include="Write\DataSetExportAutoConfig.cs" />
+    <Compile Include="Read\DataSetExtractor.cs" />
+    <Compile Include="Write\DataSetToWorkbookExporter.cs" />
+    <Compile Include="Write\DataTableExportAutoConfig.cs" />
+    <Compile Include="Write\DataTableExportConfigurator.cs" />
+    <Compile Include="Read\DataTableSource.cs" />
+    <Compile Include="Write\DataTableToSheetExporter.cs" />
+    <Compile Include="DictionaryExtensions.cs" />
+    <Compile Include="Write\Enums.cs" />
+    <Compile Include="Read\ExcelReaderExtensions.cs" />
+    <Compile Include="Read\ExcelTableReader.cs" />
+    <Compile Include="Read\ExcelTableRowReader.cs" />
+    <Compile Include="Read\ExcelTableRowReaderCollection.cs" />
+    <Compile Include="Read\IColumnDataSource.cs" />
+    <Compile Include="Write\IColumnExportConfig.cs" />
+    <Compile Include="Read\IDataSet.cs" />
+    <Compile Include="Read\IDataTable.cs" />
+    <Compile Include="Write\ISheetExportConfig.cs" />
+    <Compile Include="Read\ITableDataSource.cs" />
+    <Compile Include="Read\ITableReader.cs" />
+    <Compile Include="Read\ITableRowReader.cs" />
+    <Compile Include="Read\ITableRowReaderCollection.cs" />
+    <Compile Include="Write\IWorkbookExportConfig.cs" />
+    <Compile Include="LambdaExpressionCache.cs" />
+    <Compile Include="Read\PocoColumnSource.cs" />
+    <Compile Include="Write\PocoExportConfigurator.cs" />
+    <Compile Include="Read\PocoTableAdapter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Read\RowReaderValueResolver.cs" />
+    <Compile Include="Read\TableMappingReader.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
