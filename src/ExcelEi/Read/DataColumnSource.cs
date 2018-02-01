@@ -48,6 +48,12 @@ namespace ExcelEi.Read
 
         public Type DataType { get; }
 
+        /// <inheritdoc />
+        public object GetValue(object dataObject)
+        {
+            return ValueExtractor(dataObject);
+        }
+
         public Func<object, object> ValueExtractor { get; }
 
         public DateTime? GetDateTimeValue(object value)

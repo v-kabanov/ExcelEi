@@ -24,8 +24,8 @@ namespace ExcelEi.Read
         Type DataType { get; }
 
         /// <summary>
-        ///     Function accepting data item (e.g. row or data POCO) and returning column value
+        ///     Extract column value from data object.
         /// </summary>
-        Func<object, object> ValueExtractor { get; }
+        object GetValue(object dataObject);
     }
 }

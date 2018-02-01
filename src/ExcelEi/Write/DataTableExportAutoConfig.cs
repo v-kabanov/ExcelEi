@@ -13,17 +13,17 @@ using System.Linq;
 namespace ExcelEi.Write
 {
     /// <summary>
-    ///     Creates default configuration from existing ADO.NET <see cref="DataTable"/>.
+    ///     Builds configuration for a single table.
     /// </summary>
     public class DataTableExportAutoConfig : ISheetExportConfig
     {
-        private static readonly Color? DefaultEvenBackgroundColor = Color.White; //ColorTranslator.FromHtml("#decccb");
+        private static readonly Color? DefaultEvenBackgroundColor = Color.White;
         private static readonly Color? DefaultOddBackgroundColor = ColorTranslator.FromHtml("#FAF8F8");
 
         private readonly List<IColumnExportConfig> _columns = new List<IColumnExportConfig>();
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="DataTableExportAutoConfig"/> class.
+        ///     Creates default configuration from existing ADO.NET <see cref="DataTable"/>.
         /// </summary>
         public DataTableExportAutoConfig(DataTable dataTable)
             : this()
@@ -62,6 +62,9 @@ namespace ExcelEi.Write
             HeaderVerticalAlignment = VerticalAlignment.Top;
         }
 
+        /// <summary>
+        ///     Cancel default formatting for header.
+        /// </summary>
         public void DisableHeaderBorderAndBackgroundFormatting()
         {
             HeaderBackgroundColor = null;
@@ -69,6 +72,10 @@ namespace ExcelEi.Write
             HeaderCellBorderColor = null;
         }
 
+        /// <summary>
+        ///     EPPlus is slow when formatting. This is a convenience method to disable expensive formatting
+        ///     when data set is big and performance important.
+        /// </summary>
         public void DisableDataRowCellBorderAndBackgroundFormatting()
         {
             DataRowCellBackgroundColorExtractor = null;
@@ -76,6 +83,10 @@ namespace ExcelEi.Write
             DataRowCellBorderColor = null;
         }
 
+        /// <summary>
+        ///     EPPlus is slow when formatting. This is a convenience method to disable expensive formatting
+        ///     when data set is big and performance important.
+        /// </summary>
         public void DisableCellBorderAndBackgroundFormatting()
         {
             DisableHeaderBorderAndBackgroundFormatting();

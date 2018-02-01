@@ -19,45 +19,39 @@ namespace ExcelEi.Write
     ///     Stateful object allowing to build configuration for export from POCO collection to
     ///     Excel incrementally.
     /// </summary>
-    public class PocoExportConfigurator
+    public class PocoExportConfigurator<TE>
+        where TE: class
     {
         public const int MaxSheetNameLength = 31;
 
         /// <summary>
         ///     Use sheet name as source table name.
         /// </summary>
-        /// <param name="pocoType">
-        ///     Mandatory
-        /// </param>
         /// <param name="sheetName">
         ///     Excel sheet and virtual source table name
         /// </param>
-        public PocoExportConfigurator(Type pocoType, string sheetName)
-            : this(pocoType, sheetName, sheetName)
+        public PocoExportConfigurator(string sheetName)
+            : this(sheetName, sheetName)
         {
         }
 
         /// <summary>
         ///     Use different sheet and data table names.
         /// </summary>
-        /// <param name="pocoType">
-        ///     Mandatory
-        /// </param>
         /// <param name="sheetName">
         ///     Excel sheet and virtual source table name
         /// </param>
         /// <param name="dataTableName">
         ///     Name of the table in source data set (key in <see cref="IDataSet.DataTables"/>), see also <see cref="DataSetAdapter.Add(IDataTable,string)"/>.
         /// </param>
-        public PocoExportConfigurator(Type pocoType, string sheetName, string dataTableName)
+        public PocoExportConfigurator(string sheetName, string dataTableName)
         {
-            Check.DoRequireArgumentNotNull(pocoType, nameof(pocoType));
             Check.DoRequireArgumentNotBlank(sheetName, nameof(sheetName));
             Check.DoRequireArgumentNotBlank(dataTableName, nameof(dataTableName));
             Check.DoCheckArgument(sheetName.Length <= MaxSheetNameLength
                 , () => $"Sheet name must not exceed {MaxSheetNameLength} characters in length.");
             
-            PocoType = pocoType;
+            PocoType = typeof(TE);
 
             Config = new DataTableExportAutoConfig
             {
@@ -93,9 +87,9 @@ namespace ExcelEi.Write
         ///     Optional format for excel cells.
         /// </param>
         /// <returns></returns>
-        public DataColumnExportAutoConfig AddColumn<TV>(Func<object, TV> valueExtractor, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
+        public DataColumnExportAutoConfig AddColumn<TV>(Func<TE, TV> valueExtractor, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
         {
-            var columnSource = new PocoColumnSource(sheetColumnCaption, typeof(TV), o => valueExtractor(o));
+            var columnSource = new PocoColumnSource<TE, TV>(sheetColumnCaption, valueExtractor);
             var config = Add(columnSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
 
             return config;
@@ -117,11 +111,11 @@ namespace ExcelEi.Write
         ///     Optional format for excel cells.
         /// </param>
         /// <returns></returns>
-        public PocoExportConfigurator AddColumn(string memberName, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+        public PocoExportConfigurator<TE> AddColumn<TV>(string memberName, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotNull(memberName, nameof(memberName));
 
-            var columnSource = PocoColumnSource.CreateReflection(PocoType, memberName);
+            var columnSource = PocoColumnSource<TE, TV>.CreateReflection(memberName);
 
             Add(columnSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
 
@@ -146,11 +140,11 @@ namespace ExcelEi.Write
         /// <param name="format">
         ///     Optional format for excel cells.
         /// </param>
-        public PocoExportConfigurator AddColumn<TA, TR>(Expression<Func<TA, TR>> getter, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+        public PocoExportConfigurator<TE> AddColumn<TV>(Expression<Func<TE, TV>> getter, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotNull(getter, nameof(getter));
 
-            var columnSource = PocoColumnSource.Create(getter);
+            var columnSource = PocoColumnSource<TE, TV>.Create(getter);
             if (string.IsNullOrEmpty(columnSource.Name))
             {
                 columnSource.Name = sheetColumnCaption;
@@ -177,7 +171,7 @@ namespace ExcelEi.Write
         /// <param name="autoFit"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public PocoExportConfigurator AddCollectionColumns(string memberName, int columnCount, string sheetColumnCaptionBase, bool? autoFit = null, string format = null)
+        public PocoExportConfigurator<TE> AddCollectionColumns<TV>(string memberName, int columnCount, string sheetColumnCaptionBase, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotBlank(memberName, nameof(memberName));
             Check.DoCheckArgument(columnCount > 0, nameof(columnCount));
@@ -187,104 +181,30 @@ namespace ExcelEi.Write
             var memberInfo = PocoType.GetMember(memberName).FirstOrDefault(i => i is PropertyInfo || i is FieldInfo);
             var propertyInfo = memberInfo as PropertyInfo;
             Type collectionType;
-            Func<object, IList> collectionExtractor;
+            Func<object, IList<TV>> collectionExtractor;
             if (propertyInfo != null)
             {
                 Check.DoCheckArgument(propertyInfo.CanRead, () => $"Property {memberName} of {PocoType.Name} is not readable");
                 collectionType = propertyInfo.PropertyType;
-                collectionExtractor = e => (IList)propertyInfo.GetValue(e);
+                collectionExtractor = e => (IList<TV>)propertyInfo.GetValue(e);
             }
             else
             {
                 var fieldInfo = (FieldInfo)memberInfo;
                 Debug.Assert(fieldInfo != null, nameof(fieldInfo) + " != null");
                 collectionType = fieldInfo.FieldType;
-                collectionExtractor = e => (IList)fieldInfo.GetValue(e);
+                collectionExtractor = e => (IList<TV>)fieldInfo.GetValue(e);
             }
 
-            Check.DoCheckArgument(collectionType.IsArray || typeof(IList).IsAssignableFrom(collectionType)
-                , () => $"{PocoType.Name}.{memberName} is not a collection.");
+            Check.DoCheckArgument(typeof(IList<TV>).IsAssignableFrom(collectionType)
+                , () => $"{PocoType.Name}.{memberName} does not implement {typeof(IList<TV>).Name}.");
 
-            var elementType = GetCollectionElementType(collectionType);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            AddCollectionColumns(collectionExtractor, elementType, columnCount, sheetColumnCaptionBase, autoFit, format);
+            AddCollectionColumns(collectionExtractor, columnCount, sheetColumnCaptionBase, autoFit, format);
 
             return this;
         }
 
-        /// <summary>
-        ///     Configure export of collection member with up to <paramref name="columnCount"/> elements.
-        ///     A column will be created for every collection item, limited by max number supported by excel.
-        ///     This version supports arrays and lists (both generic and non-generic).
-        /// </summary>
-        /// <param name="collectionMemberGetter">
-        ///     Name of property or field returning array or <see cref="IList"/>, mandatory. If 
-        ///     Mandatory, reference returning property or field or arbitrary array or <see cref="IList"/> typed value.
-        ///     If it is not a property or field reference, <paramref name="sheetColumnCaptionBase"/> must be specified
-        ///     and it will be used as source column name base for identification.
-        ///     The expression is compiled, cached and used for retrieving values for the column.
-        /// </param>
-        /// <param name="columnCount">
-        ///     Number of columns to create. Collection elements exceeding this limit will not be exported.
-        ///     Max number of columns supported by excel is 16384.
-        /// </param>
-        /// <param name="sheetColumnCaptionBase">
-        ///     Optional, default is same as <paramref name="collectionMemberGetter"/>'s name; columns will be named by appending '[index]' to the base.
-        /// </param>
-        /// <param name="autoFit"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
-        public PocoExportConfigurator AddCollectionColumns<TA>(Expression<Func<TA, IList>> collectionMemberGetter, int columnCount, string sheetColumnCaptionBase = null, bool? autoFit = null, string format = null)
-        {
-            Check.DoRequireArgumentNotNull(collectionMemberGetter, nameof(collectionMemberGetter));
-            Check.DoCheckArgument(columnCount > 0 && columnCount < 16384, nameof(columnCount));
-            Check.DoCheckArgument(collectionMemberGetter.Body is MemberExpression || !string.IsNullOrWhiteSpace(sheetColumnCaptionBase)
-                                  , "When using non-member expression name must be provided");
-
-            var memberInfo = (collectionMemberGetter.Body as MemberExpression)?.Member
-                             ?? ((collectionMemberGetter.Body as UnaryExpression)?.Operand as MemberExpression)?.Member;
-
-            Check.DoCheckArgument(memberInfo != null || !string.IsNullOrWhiteSpace(sheetColumnCaptionBase)
-                                  , () => "If collection expression does not refer to property or field, sheet column caption base must be provided");
-
-            if (string.IsNullOrWhiteSpace(sheetColumnCaptionBase))
-            {
-                Debug.Assert(memberInfo != null, nameof(memberInfo) + " != null");
-                sheetColumnCaptionBase = memberInfo.Name;
-            }
-
-            var memberName = memberInfo?.Name ?? sheetColumnCaptionBase;
-
-            var propertyInfo = memberInfo as PropertyInfo;
-            Type collectionType;
-            Func<object, IList> collectionExtractor;
-            if (propertyInfo != null)
-            {
-                Check.DoCheckArgument(propertyInfo.CanRead, () => $"Property {memberName} of {PocoType.Name} is not readable");
-                collectionType = propertyInfo.PropertyType;
-                collectionExtractor = e => (IList)propertyInfo.GetValue(e);
-            }
-            else
-            {
-                var fieldInfo = (FieldInfo)memberInfo;
-                Debug.Assert(fieldInfo != null, nameof(fieldInfo) + " != null");
-                collectionType = fieldInfo.FieldType;
-                collectionExtractor = e => (IList)fieldInfo.GetValue(e);
-            }
-
-            Check.DoCheckArgument(collectionType.IsArray || typeof(IList).IsAssignableFrom(collectionType)
-                , () => $"{PocoType.Name}.{memberName} is not a collection.");
-
-            var elementType = GetCollectionElementType(collectionType);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            AddCollectionColumns(collectionExtractor, elementType, columnCount, sheetColumnCaptionBase, autoFit, format);
-
-            return this;
-        }
+        
 
         /// <summary>
         ///     Configure export of generic list (or array) member with up to <paramref name="columnCount"/> elements.
@@ -307,7 +227,7 @@ namespace ExcelEi.Write
         /// <param name="autoFit"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public PocoExportConfigurator AddCollectionColumns<TA, TV>(Expression<Func<TA, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionBase = null, bool? autoFit = null, string format = null)
+        public PocoExportConfigurator<TE> AddCollectionColumns<TV>(Expression<Func<TE, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionBase = null, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotNull(collectionMemberGetter, nameof(collectionMemberGetter));
             Check.DoCheckArgument(columnCount > 0 && columnCount < 16384, nameof(columnCount));
@@ -330,29 +250,23 @@ namespace ExcelEi.Write
 
             var propertyInfo = memberInfo as PropertyInfo;
             Type collectionType;
-            Func<object, IList<TV>> collectionExtractor;
+            var collectionExtractor = LambdaExpressionCache.Compile(collectionMemberGetter);
             if (propertyInfo != null)
             {
                 Check.DoCheckArgument(propertyInfo.CanRead, () => $"Property {memberName} of {PocoType.Name} is not readable");
                 collectionType = propertyInfo.PropertyType;
-                collectionExtractor = e => (IList<TV>)propertyInfo.GetValue(e);
             }
             else
             {
                 var fieldInfo = (FieldInfo)memberInfo;
                 Debug.Assert(fieldInfo != null, nameof(fieldInfo) + " != null");
                 collectionType = fieldInfo.FieldType;
-                collectionExtractor = e => (IList<TV>)fieldInfo.GetValue(e);
             }
 
             Check.DoCheckArgument(typeof(IList<TV>).IsAssignableFrom(collectionType)
                 , () => $"{PocoType.Name}.{memberName} is not a generic list.");
 
-            var elementType = GetCollectionElementType(collectionType);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            AddCollectionColumns(collectionExtractor, elementType, columnCount, sheetColumnCaptionBase, autoFit, format);
+            AddCollectionColumns(collectionExtractor, columnCount, sheetColumnCaptionBase, autoFit, format);
 
             return this;
         }
@@ -418,7 +332,10 @@ namespace ExcelEi.Write
         {
             Check.DoRequireArgumentNotNull(collectionType, nameof(collectionType));
 
-            var collectionIfaceType = collectionType.GetGenericTypeDefinition() == typeof(IList<>)
+            if (collectionType.IsArray)
+                return collectionType.GetElementType();
+
+            var collectionIfaceType = collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(IList<>)
                                         ? collectionType
                                         : collectionType.GetInterfaces().FirstOrDefault(
                                             i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IList<>));
@@ -426,14 +343,10 @@ namespace ExcelEi.Write
             Check.DoCheckArgument(typeof(IList).IsAssignableFrom(collectionType)
                                   || collectionIfaceType != null, () => $"Type {collectionType.FullName} doesn not implement IList or IList<>.");
 
-            if (collectionType.IsArray)
-                return collectionType.GetElementType();
-
             return collectionIfaceType?.GetGenericArguments()[0] ?? typeof(object);
         }
 
-        private void AddCollectionColumns<TV>(Func<object, IList<TV>> collectionGetter,
-            Type elementType,
+        private void AddCollectionColumns<TV>(Func<TE, IList<TV>> collectionGetter,
             int columnCount,
             string sheetColumnCaptionBase,
             bool? autoFit = null,
@@ -443,23 +356,7 @@ namespace ExcelEi.Write
             {
                 var collectionIndex = i;
                 var columnName = $"{sheetColumnCaptionBase}[{collectionIndex}]";
-                var columnSource = new PocoColumnSource(columnName, elementType, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
-                Add(columnSource, Config.Columns.Count, columnName, autoFit, format);
-            }
-        }
-
-        private void AddCollectionColumns(Func<object, IList> collectionGetter,
-            Type elementType,
-            int columnCount,
-            string sheetColumnCaptionBase,
-            bool? autoFit = null,
-            string format = null)
-        {
-            for (var i = 0; i < columnCount; ++i)
-            {
-                var collectionIndex = i;
-                var columnName = $"{sheetColumnCaptionBase}[{collectionIndex}]";
-                var columnSource = new PocoColumnSource(columnName, elementType, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
+                var columnSource = new PocoColumnSource<TE, TV>(columnName, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
                 Add(columnSource, Config.Columns.Count, columnName, autoFit, format);
             }
         }

@@ -14,12 +14,6 @@ namespace ExcelEi.Test
         public string Value { get; set; }
     }
 
-    public class NameValueMap
-    {
-        public NameValueMap()
-        {
-        }
-    }
     /// <summary>
     ///     Strongly typed entry in common wafer defect data spreadsheet, represents 1 'valid' die defect occurrence.
     /// </summary>
@@ -192,24 +186,6 @@ namespace ExcelEi.Test
             }
 
             Assert.AreEqual(epplusResult, excelDataReaderResult);
-        }
-
-
-        [Test]
-        public void AdHocTest()
-        {
-            using (var package = new ExcelPackage(new FileInfo(TestFilePath)))
-            {
-                var workbook = package.Workbook;
-                var worksheet = workbook.Worksheets[1];
-
-                var dataTableReader = ExcelTableReader.ReadContiguousTableWithHeader(worksheet, 15);
-
-                var defectReader = new DefectReader(false);
-
-                var result = defectReader.Read(dataTableReader);
-                Assert.IsNotEmpty(result);
-            }
         }
 
         private static void TestReadMappedSummaryTable(ITableReader tableReader)

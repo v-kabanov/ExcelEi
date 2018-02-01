@@ -61,7 +61,7 @@ namespace ExcelEi.Read
 
                 for (var columnIndex = 0; columnIndex < columnDescriptors.Length; ++columnIndex)
                 {
-                    row[columnIndex] = columnDescriptors[columnIndex].ValueExtractor(dataItem) ?? DBNull.Value;
+                    row[columnIndex] = columnDescriptors[columnIndex].GetValue(dataItem) ?? DBNull.Value;
                 }
             }
 

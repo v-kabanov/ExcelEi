@@ -5,10 +5,8 @@
 // **********************************************************************************************/
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Drawing;
 using System.IO;
 using NUnit.Framework;
@@ -18,7 +16,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using ExcelEi.Write;
-using NUnit.Framework.Internal;
 
 namespace ExcelEi.Test
 {
@@ -27,8 +24,16 @@ namespace ExcelEi.Test
         private static int _idSequence;
         private static readonly Random Random = new Random();
 
+        public PocoOne()
+        {
+        }
+
         public PocoOne(int valueCount)
         {
+            Id = Interlocked.Increment(ref _idSequence);
+
+            DateTime = DateTime.Now;
+
             Values = new double?[valueCount];
 
             for (var i = 0; i < valueCount; ++i)
@@ -40,23 +45,52 @@ namespace ExcelEi.Test
             }
         }
 
-        public int Id { get; } = Interlocked.Increment(ref _idSequence);
+        public int Id { get; set; }
 
-        public DateTime DateTime = DateTime.Now;
+        public DateTime DateTime { get; set; }
 
         public double?[] Values { get; set; }
+    }
+
+    public class PocoOneReader : TableMappingReader<PocoOne>
+    {
+        /// <inheritdoc />
+        public PocoOneReader()
+        {
+            Map(o => o.Id);
+            Map(o => o.DateTime);
+            Map(o => o.Values, "Joined Values", ParseJoinedValues);
+        }
+
+        private double?[] ParseJoinedValues(object joinedValue)
+        {
+            return joinedValue
+                ?.ToString()
+                .Split(',')
+                .Select(Parse)
+                .ToArray();
+        }
+
+        private static double? Parse(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return null;
+
+            return double.Parse(value);
+        }
     }
 
     [TestFixture]
     public class DataSetToWorkbookExportTest
     {
-        private static string TestFileDirectoryPath => TestContext.CurrentContext.TestDirectory;
+        private string GetNewOutFilePath() =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}.xlsx");
 
         [Test]
         public void OneTable()
         {
-            var file = new FileInfo(Path.Combine(TestFileDirectoryPath, Path.ChangeExtension(Guid.NewGuid().ToString(), "xlsx")));
-            var workbook = new ExcelPackage(file);
+            var outPath = GetNewOutFilePath();
+            var workbook = new ExcelPackage(new FileInfo(outPath));
 
             var dataSet = new DataSet();
             var tableName = "LastSegments";
@@ -115,17 +149,48 @@ namespace ExcelEi.Test
             var duration = DateTime.Now - start;
 
             Console.WriteLine("Duration: {0}", duration);
+
+            workbook.Save();
+
+            TestContext.WriteLine($"Saved {outPath}.");
+
+            workbook.Dispose();
+            var readTable = AdoTableReader.GetWorksheetDataTable(outPath);
+
+            Assert.AreEqual(tableConfig.Columns.Count, readTable.Columns.Count);
+
+            for (var i = 0; i < tableConfig.Columns.Count; ++i)
+            {
+                //ExcelDataReader does not set column name, caption and contains header as first data row
+                Assert.AreEqual(tableConfig.Columns[i].Caption, readTable.Rows[0][i]);
+                // since header is first data row, only string type will be set correctly
+                //Assert.AreEqual(tableConfig.Columns[i].ColumnDataSource.DataType, readTable.Columns[i].DataType);
+            }
+
+            Assert.AreEqual(rowCount, readTable.Rows.Count - 1);
+
+            for (int i = 0; i < rowCount; ++i)
+            {
+                var savedRow = dataTable.Rows[i];
+                var readRow = readTable.Rows[i + 1];
+                for (var c = 0; c < tableConfig.Columns.Count; ++c)
+                {
+                    Assert.AreEqual(savedRow[c], readRow[c]);
+                }
+            }
+
+            File.Delete(outPath);
         }
 
         [Test]
         public void ArrayFromPoco()
         {
-            var file = new FileInfo(Path.Combine(TestFileDirectoryPath, Path.ChangeExtension(Guid.NewGuid().ToString(), "xlsx")));
-            var workbook = new ExcelPackage(file);
+            var outPath = GetNewOutFilePath();
+            var workbook = new ExcelPackage(new FileInfo(outPath));
 
             var dataSetExportConfig = new DataSetExportAutoConfig();
 
-            var configurator = new PocoExportConfigurator(typeof(PocoOne), "OneSheet", "One");
+            var configurator = new PocoExportConfigurator<PocoOne>("OneSheet", "One");
 
             Expression<Func<PocoOne, int>> refId = o => o.Id;
             Expression<Func<PocoOne, DateTime>> refDateTime = o => o.DateTime;
@@ -141,7 +206,7 @@ namespace ExcelEi.Test
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
-            configurator = new PocoExportConfigurator(typeof(PocoOne), "TwoSheet");
+            configurator = new PocoExportConfigurator<PocoOne>("TwoSheet");
 
             configurator.AddColumn(refDateTime);
 
@@ -167,7 +232,37 @@ namespace ExcelEi.Test
             exporter.Export(workbook);
 
             workbook.Save();
+            TestContext.WriteLine($"Saved {outPath}.");
+
             workbook.Dispose();
+
+            workbook = new ExcelPackage(new FileInfo(outPath));
+
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+            var readPocos = new PocoOneReader().Read(reader);
+
+            Assert.AreEqual(data1.Count, readPocos.Count);
+
+            for (int i = 0; i < data1.Count; ++i)
+            {
+                var saved = data1[i];
+                var read = readPocos[i];
+                Assert.AreEqual(saved.Id, read.Id);
+                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
+                Assert.AreEqual(saved.Values.Length, read.Values.Length);
+
+                for (var j = 0; j < saved.Values.Length; ++j)
+                {
+                    if (saved.Values[j].HasValue)
+                        Assert.AreEqual(saved.Values[j].Value, read.Values[j], 0.0000001D);
+                    else
+                        Assert.IsFalse(read.Values[j].HasValue);
+                }
+            }
+
+            workbook.Dispose();
+
+            File.Delete(outPath);
         }
     }
 }

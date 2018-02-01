@@ -99,7 +99,7 @@ namespace ExcelEi.Write
                         || columnConfig.CellBorderStyle.HasValue)
                         cellStyle = cell.Style;
 
-                    cell.Value = columnConfig.ValueExtractor.Invoke(dataItem);
+                    cell.Value = columnConfig.GetCellValue(dataItem);
 
                     if (columnConfig.CellCommentExtractor != null)
                     {

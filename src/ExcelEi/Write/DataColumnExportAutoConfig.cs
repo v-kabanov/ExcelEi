@@ -17,6 +17,8 @@ namespace ExcelEi.Write
     /// </summary>
     public class DataColumnExportAutoConfig : IColumnExportConfig
     {
+        public const string DefaultDateTimeFormat = "dd-MMM-yyyy hh:mm:ss AM/PM";
+
         /// <param name="sheet">
         ///     Mandatory, containing sheet export configuration
         /// </param>
@@ -100,14 +102,12 @@ namespace ExcelEi.Write
 
             if (isDateTime)
             {
-                Format = "dd-MMM-yyyy hh:mm:ss AM/PM";
+                Format = DefaultDateTimeFormat;
             }
             else if (columnDataSource.DataType == typeof(string))
             {
                 MaximumWidth = 50;
             }
-
-            ValueExtractor = columnDataSource.ValueExtractor;
         }
 
         public IColumnDataSource ColumnDataSource { get; }
@@ -155,13 +155,8 @@ namespace ExcelEi.Write
         /// </summary>
         public double? MaximumWidth { get; set; }
 
-        /// <summary>
-        ///     Extractor from row instance.
-        /// </summary>
-        /// <remarks>
-        ///     Mandatory, must never be null.
-        /// </remarks>
-        public Func<object, object> ValueExtractor { get; set; }
+        /// <inheritdoc />
+        public object GetCellValue(object dataObject) => ColumnDataSource.GetValue(dataObject);
 
         /// <summary>
         ///     Extractor from row instance.

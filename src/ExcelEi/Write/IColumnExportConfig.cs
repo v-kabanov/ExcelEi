@@ -6,6 +6,7 @@
 
 using System;
 using System.Drawing;
+using ExcelEi.Read;
 
 namespace ExcelEi.Write
 {
@@ -18,6 +19,8 @@ namespace ExcelEi.Write
         ///     Reference to containing sheet. 
         /// </summary>
         ISheetExportConfig SheetExportConfig { get; }
+
+        IColumnDataSource ColumnDataSource { get; }
 
         /// <summary>
         ///     0 - based index of the sheet column, relative to the table position in the worksheet.
@@ -63,12 +66,12 @@ namespace ExcelEi.Write
         double? MaximumWidth { get; }
 
         /// <summary>
-        ///     Extractor from row instance.
+        ///     Get cell value from data object representing a row.
         /// </summary>
-        /// <remarks>
-        ///     Mandatory, must never be null.
-        /// </remarks>
-        Func<object, object> ValueExtractor { get; }
+        /// <param name="dataObject">
+        ///     May be e.g. ADO.NET DataRow or POCO
+        /// </param>
+        object GetCellValue(object dataObject);
 
         /// <summary>
         ///     Extractor from row instance.
