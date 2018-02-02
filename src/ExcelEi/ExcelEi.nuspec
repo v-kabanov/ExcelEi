@@ -7,11 +7,12 @@
     <authors>Vasily Kabanov</authors>
     <owners>vkabanov</owners>
     <projectUrl>https://github.com/v-kabanov/ExcelEi</projectUrl>
+    <licenseUrl>http://unlicense.org/</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A library for Excel export/import.</description>
     <summary>Builds on top of EPPlus, ExcelDataReader and AutoMapper, adding POCO mapping. The goal was loose coupling between data mapping, formatting and data itself, code brevity and type safety (expressions rather than reflection).</summary>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright (C) 2017-2017 Vasily Kabanov.</copyright>
+    <copyright>Copyright (C) 2017-2018 Vasily Kabanov.</copyright>
     <tags>excel import  export OpenXML epplus</tags>
   </metadata>
 </package>
