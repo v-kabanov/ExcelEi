@@ -202,7 +202,7 @@ namespace ExcelEi.Test
                 .AddColumn(refDateTime)
                 .AddColumn(refJoinedCollection, "Joined Values");
 
-            configurator.AddCollectionColumns(refCollection, 5);
+            configurator.AddCollectionColumns(refCollection, 5, "value#{0}");
 
             dataSetExportConfig.AddSheet(configurator.Config);
 

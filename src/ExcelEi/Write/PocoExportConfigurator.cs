@@ -165,18 +165,18 @@ namespace ExcelEi.Write
         /// <param name="columnCount">
         ///     Number of columns to create. Collection elements exceeding this limit will not be exported.
         /// </param>
-        /// <param name="sheetColumnCaptionBase">
+        /// <param name="sheetColumnCaptionFormat">
         ///     Optional, default is same as <paramref name="memberName"/>; columns will be named by appending '[index]' to the base.
         /// </param>
         /// <param name="autoFit"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public PocoExportConfigurator<TE> AddCollectionColumns<TV>(string memberName, int columnCount, string sheetColumnCaptionBase, bool? autoFit = null, string format = null)
+        public PocoExportConfigurator<TE> AddCollectionColumns<TV>(string memberName, int columnCount, string sheetColumnCaptionFormat, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotBlank(memberName, nameof(memberName));
             Check.DoCheckArgument(columnCount > 0, nameof(columnCount));
 
-            sheetColumnCaptionBase = sheetColumnCaptionBase ?? memberName;
+            sheetColumnCaptionFormat = sheetColumnCaptionFormat ?? memberName;
 
             var memberInfo = PocoType.GetMember(memberName).FirstOrDefault(i => i is PropertyInfo || i is FieldInfo);
             var propertyInfo = memberInfo as PropertyInfo;
@@ -199,7 +199,7 @@ namespace ExcelEi.Write
             Check.DoCheckArgument(typeof(IList<TV>).IsAssignableFrom(collectionType)
                 , () => $"{PocoType.Name}.{memberName} does not implement {typeof(IList<TV>).Name}.");
 
-            AddCollectionColumns(collectionExtractor, columnCount, sheetColumnCaptionBase, autoFit, format);
+            AddCollectionColumns(collectionExtractor, columnCount, sheetColumnCaptionFormat, autoFit, format);
 
             return this;
         }
@@ -213,7 +213,7 @@ namespace ExcelEi.Write
         /// <param name="collectionMemberGetter">
         ///     Name of property or field returning array or <see cref="IList{TV}"/>, mandatory. If 
         ///     Mandatory, reference returning property or field implementing <see cref="IList{TV}"/>.
-        ///     If it is not a property or field reference, <paramref name="sheetColumnCaptionBase"/> must be specified
+        ///     If it is not a property or field reference, <paramref name="sheetColumnCaptionFormat"/> must be specified
         ///     and it will be used as source column name base for identification.
         ///     The expression is compiled, cached and used for retrieving values for the column.
         /// </param>
@@ -221,32 +221,32 @@ namespace ExcelEi.Write
         ///     Number of columns to create. Collection elements exceeding this limit will not be exported.
         ///     Max number of columns supported by excel is 16384.
         /// </param>
-        /// <param name="sheetColumnCaptionBase">
-        ///     Optional, default is same as <paramref name="collectionMemberGetter"/>'s name; columns will be named by appending '[index]' to the base.
+        /// <param name="sheetColumnCaptionFormat">
+        ///     .Net format string accepting index as the only argument. Default is 'MemberName[{0}]' where MemberName
+        ///     is <paramref name="collectionMemberGetter"/>'s name.
         /// </param>
         /// <param name="autoFit"></param>
         /// <param name="format"></param>
         /// <returns></returns>
-        public PocoExportConfigurator<TE> AddCollectionColumns<TV>(Expression<Func<TE, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionBase = null, bool? autoFit = null, string format = null)
+        public PocoExportConfigurator<TE> AddCollectionColumns<TV>(
+            Expression<Func<TE, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionFormat = null, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotNull(collectionMemberGetter, nameof(collectionMemberGetter));
             Check.DoCheckArgument(columnCount > 0 && columnCount < 16384, nameof(columnCount));
-            Check.DoCheckArgument(collectionMemberGetter.Body is MemberExpression || !string.IsNullOrWhiteSpace(sheetColumnCaptionBase)
-                                  , "When using non-member expression name must be provided");
 
             var memberInfo = (collectionMemberGetter.Body as MemberExpression)?.Member
                              ?? ((collectionMemberGetter.Body as UnaryExpression)?.Operand as MemberExpression)?.Member;
 
-            Check.DoCheckArgument(memberInfo != null || !string.IsNullOrWhiteSpace(sheetColumnCaptionBase)
-                                  , () => "If collection expression does not refer to property or field, sheet column caption base must be provided");
+            Check.DoCheckArgument(memberInfo != null || !string.IsNullOrWhiteSpace(sheetColumnCaptionFormat)
+                                  , "If collection expression does not refer to property or field, column caption format must be provided");
 
-            if (string.IsNullOrWhiteSpace(sheetColumnCaptionBase))
+            if (string.IsNullOrWhiteSpace(sheetColumnCaptionFormat))
             {
                 Debug.Assert(memberInfo != null, nameof(memberInfo) + " != null");
-                sheetColumnCaptionBase = memberInfo.Name;
+                sheetColumnCaptionFormat = $"{memberInfo.Name}[{{0}}]";
             }
 
-            var memberName = memberInfo?.Name ?? sheetColumnCaptionBase;
+            var memberName = memberInfo?.Name ?? collectionMemberGetter.ToString();
 
             var propertyInfo = memberInfo as PropertyInfo;
             Type collectionType;
@@ -266,7 +266,7 @@ namespace ExcelEi.Write
             Check.DoCheckArgument(typeof(IList<TV>).IsAssignableFrom(collectionType)
                 , () => $"{PocoType.Name}.{memberName} is not a generic list.");
 
-            AddCollectionColumns(collectionExtractor, columnCount, sheetColumnCaptionBase, autoFit, format);
+            AddCollectionColumns(collectionExtractor, columnCount, sheetColumnCaptionFormat, autoFit, format);
 
             return this;
         }
@@ -320,42 +320,16 @@ namespace ExcelEi.Write
             return list[index];
         }
 
-        private object TryGetCollectionElement(IList list, int index)
-        {
-            if (list == null || index >= list.Count || index < 0)
-                return null;
-
-            return list[index];
-        }
-
-        private Type GetCollectionElementType(Type collectionType)
-        {
-            Check.DoRequireArgumentNotNull(collectionType, nameof(collectionType));
-
-            if (collectionType.IsArray)
-                return collectionType.GetElementType();
-
-            var collectionIfaceType = collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(IList<>)
-                                        ? collectionType
-                                        : collectionType.GetInterfaces().FirstOrDefault(
-                                            i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IList<>));
-
-            Check.DoCheckArgument(typeof(IList).IsAssignableFrom(collectionType)
-                                  || collectionIfaceType != null, () => $"Type {collectionType.FullName} doesn not implement IList or IList<>.");
-
-            return collectionIfaceType?.GetGenericArguments()[0] ?? typeof(object);
-        }
-
         private void AddCollectionColumns<TV>(Func<TE, IList<TV>> collectionGetter,
             int columnCount,
-            string sheetColumnCaptionBase,
+            string sheetColumnCaptionFormat,
             bool? autoFit = null,
             string format = null)
         {
             for (var i = 0; i < columnCount; ++i)
             {
                 var collectionIndex = i;
-                var columnName = $"{sheetColumnCaptionBase}[{collectionIndex}]";
+                var columnName = string.Format(sheetColumnCaptionFormat, collectionIndex);
                 var columnSource = new PocoColumnSource<TE, TV>(columnName, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
                 Add(columnSource, Config.Columns.Count, columnName, autoFit, format);
             }
