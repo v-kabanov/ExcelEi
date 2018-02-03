@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>ExcelEi</id>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <title>ExcelEi</title>
     <authors>Vasily Kabanov</authors>
     <owners>vkabanov</owners>
@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A library for Excel export/import.</description>
     <summary>Builds on top of EPPlus, ExcelDataReader and AutoMapper, adding POCO mapping. The goal was loose coupling between data mapping, formatting and data itself, code brevity and type safety (expressions rather than reflection).</summary>
-    <releaseNotes></releaseNotes>
+    <releaseNotes>Downgraded .NET Framework version to 4.5.</releaseNotes>
     <copyright>Copyright (C) 2017-2018 Vasily Kabanov.</copyright>
     <tags>excel import  export OpenXML epplus</tags>
   </metadata>
