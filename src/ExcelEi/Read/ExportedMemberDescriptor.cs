@@ -31,11 +31,17 @@ namespace ExcelEi.Read
         /// <param name="name">
         ///     Optional
         /// </param>
-        public ExportedMemberDescriptor(Func<TA, TV> valueExtractor, string name)
+        /// <param name="dataType">
+        ///     Optional, type of value extracted by <paramref name="valueExtractor"/>, if it is not
+        ///     known at compile time.
+        /// </param>
+        public ExportedMemberDescriptor(Func<TA, TV> valueExtractor, string name, Type dataType = null)
         {
             Check.DoRequireArgumentNotNull(valueExtractor, nameof(valueExtractor));
 
-            DataType = Nullable.GetUnderlyingType(typeof(TV)) ?? typeof(TV);
+            dataType = dataType ?? typeof(TV);
+
+            DataType = Nullable.GetUnderlyingType(dataType) ?? dataType;
             ValueExtractor = valueExtractor;
 
             IsCollection = DataType.IsArray

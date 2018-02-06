@@ -29,6 +29,8 @@ namespace ExcelEi.Read
         /// <summary>
         ///     Extracted type, underlying for nullables.
         ///     E.g. if member is 'double?', typeof(double) will be returned.
+        ///     When data types are unknown at compile type and reflection is used, extractor will return <see cref="object"/>
+        ///     but data type should be correctly set at run time so that exporter can apply appropriate formatting.
         /// </summary>
         Type DataType { get; }
 

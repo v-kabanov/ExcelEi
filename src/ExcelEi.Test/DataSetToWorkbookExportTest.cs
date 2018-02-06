@@ -282,7 +282,11 @@ namespace ExcelEi.Test
                 .AddColumn(refFieldInt)
                 // same column via reflection; duplicate caption allowed when exporting, but not when importing
                 // as the reader would not be able to choose which column to get data from
-                .AddColumn<int?>(nameof(PocoTwo.FieldInt), "ReflectionFieldInt");
+                .AddColumn<int?>(nameof(PocoTwo.FieldInt), "ReflectionFieldInt")
+                // when extracted type is unknown at compile time (type parameter is object), actual type will be resolved via reflection
+                .AddColumn<object>(nameof(PocoTwo.FieldInt), "ReflectionFieldIntLateType");
+
+            Assert.AreEqual(typeof(int), configurator.Config.GetAutoColumnConfig("ReflectionFieldIntLateType").ColumnDataSource.DataType);
 
             dataSetExportConfig.AddSheet(configurator.Config);
 

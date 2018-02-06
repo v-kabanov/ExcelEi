@@ -17,7 +17,8 @@ namespace ExcelEi.Read
     /// </typeparam>
     /// <typeparam name="TV">
     ///     Type of the value retrieved from POCO. <see cref="DataType"/> is not the same if <typeparamref name="TV"/>
-    ///     is <see cref="Nullable{T}"/>.
+    ///     is <see cref="Nullable{T}"/> or when using reflection. When reflection is used <typeparamref name="TV"/>
+    ///     will often be <see cref="object"/> but <see cref="DataType"/> should be correctly reflected.
     /// </typeparam>
     public class PocoColumnSource<TA, TV> : IColumnDataSource
         where TA : class
@@ -26,9 +27,12 @@ namespace ExcelEi.Read
         ///     Mandatory; provides <see cref="ValueExtractor"/> and <see cref="Name"/>.
         /// </param>
         public PocoColumnSource(IExportedMemberDescriptor<TA, TV> memberDescriptor)
-            : this (memberDescriptor.Name, memberDescriptor.ValueExtractor)
         {
             Check.DoCheckArgument(!memberDescriptor.IsCollection, () => $"Collections are not supported by this method ({memberDescriptor.Name}).");
+
+            Name = memberDescriptor.Name;
+            ValueExtractor = memberDescriptor.ValueExtractor;
+            DataType = memberDescriptor.DataType;
         }
 
         /// <param name="name">
@@ -39,14 +43,20 @@ namespace ExcelEi.Read
         ///     The argument passed to the function will be null if actual POCO from which value is extracted
         ///     is not <typeparamref name="TA"/>.
         /// </param>
-        public PocoColumnSource(string name, Func<TA, TV> valueExtractor)
+        /// <param name="dataType">
+        ///     Optional, type of value extracted by <paramref name="valueExtractor"/>, if it is not
+        ///     known at compile time.
+        /// </param>
+        public PocoColumnSource(string name, Func<TA, TV> valueExtractor, Type dataType = null)
         {
             Check.DoRequireArgumentNotNull(valueExtractor, nameof(valueExtractor));
 
             Name = name;
             ValueExtractor = valueExtractor;
 
-            DataType = Nullable.GetUnderlyingType(typeof(TV)) ?? typeof(TV);
+            dataType = dataType ?? typeof(TV);
+
+            DataType = Nullable.GetUnderlyingType(dataType) ?? dataType;
         }
 
         /// <inheritdoc />

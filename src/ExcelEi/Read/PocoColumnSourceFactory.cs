@@ -57,6 +57,10 @@ namespace ExcelEi.Read
         /// <summary>
         ///     Helper factory method, creates column source definition from type and member name using reflection.
         /// </summary>
+        /// <typeparam name="TV">
+        ///     Expected and extracted value type; if <see cref="object"/>, source data type will be set using reflection.
+        ///     Otherwise actual value will be explicitly cast to <see cref="TV"/> when extracting.
+        /// </typeparam>
         /// <param name="pocoType">
         ///     Type containing property or field.
         /// </param>
@@ -109,7 +113,11 @@ namespace ExcelEi.Read
                                                                                // ReSharper disable once AccessToModifiedClosure
                                                                                $"{dataType.Name} and cannot be implicitly cast to {typeof(TV).Name}");
 
-            return new ExportedMemberDescriptor<object, TV>(valueExtractor, memberName);
+            var descriptorDataType = typeof(TV) == typeof(object)
+                ? dataType
+                : typeof(TV);
+
+            return new ExportedMemberDescriptor<object, TV>(valueExtractor, memberName, descriptorDataType);
         }
     }
 }
