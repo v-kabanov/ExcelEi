@@ -55,7 +55,7 @@ namespace ExcelEi.Read
 
         public TableMappingReader<T> Map<V>(Expression<Func<T, V>> memberReference)
         {
-            var memberInfo = GetMember(memberReference);
+            var memberInfo = ExpressionHelper.GetMember(memberReference);
 
             Check.DoRequire(memberInfo != null, "Cannot resolve member reference");
             Debug.Assert(memberInfo != null, "memberInfo != null");
@@ -162,15 +162,9 @@ namespace ExcelEi.Read
 
         private void RegisterMemberMapping(LambdaExpression expression, string columnName)
         {
-            var memberInfo = GetMember(expression);
+            var memberInfo = ExpressionHelper.GetMember(expression);
             if (null != memberInfo)
                 _mappedMembers.Add(new KeyValuePair<MemberInfo, string>(memberInfo, columnName));
-        }
-
-        private MemberInfo GetMember(LambdaExpression expression)
-        {
-            return (expression.Body as MemberExpression)?.Member
-                             ?? ((expression.Body as UnaryExpression)?.Operand as MemberExpression)?.Member;
         }
     }
 }

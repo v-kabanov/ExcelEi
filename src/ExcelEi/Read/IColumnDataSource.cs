@@ -14,7 +14,7 @@ namespace ExcelEi.Read
     public interface IColumnDataSource
     {
         /// <summary>
-        ///     Name in the data source's data item (e.g. row or data POCO).
+        ///     Name in the data source's data item (e.g. row or data POCO). Column name does not have to be the same.
         /// </summary>
         string Name { get; }
 

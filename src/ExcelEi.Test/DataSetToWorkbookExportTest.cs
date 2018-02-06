@@ -19,29 +19,20 @@ using ExcelEi.Write;
 
 namespace ExcelEi.Test
 {
-    public class PocoOne
+    public class PocoBase
     {
+        protected static readonly Random Random = new Random();
+
         private static int _idSequence;
-        private static readonly Random Random = new Random();
 
-        public PocoOne()
+        /// <inheritdoc />
+        public PocoBase(bool newIdentity = false)
         {
-        }
-
-        public PocoOne(int valueCount)
-        {
-            Id = Interlocked.Increment(ref _idSequence);
-
-            DateTime = DateTime.Now;
-
-            Values = new double?[valueCount];
-
-            for (var i = 0; i < valueCount; ++i)
+            if (newIdentity)
             {
-                if (Random.NextDouble() < 0.1)
-                    Values[i] = null;
-                else
-                    Values[i] = Random.NextDouble() * 500;
+                Id = Interlocked.Increment(ref _idSequence);
+
+                DateTime = DateTime.Now;
             }
         }
 
@@ -49,7 +40,67 @@ namespace ExcelEi.Test
 
         public DateTime DateTime { get; set; }
 
+        protected static bool TakeChance(double rate = 0.1)
+        {
+            Check.DoCheckArgument(rate >= 0 && rate <= 1);
+
+            return Random.NextDouble() < rate;
+        }
+    }
+
+    public class PocoOne : PocoBase
+    {
+        /// <summary>
+        ///     Constructor for reading from storage.
+        /// </summary>
+        public PocoOne()
+        {
+        }
+
+        /// <summary>
+        ///     Constructor for creating new instances.
+        /// </summary>
+        public PocoOne(int valueCount)
+            : base(true)
+        {
+
+            Values = new double?[valueCount];
+
+            for (var i = 0; i < valueCount; ++i)
+            {
+                if (TakeChance())
+                    Values[i] = null;
+                else
+                    Values[i] = Random.NextDouble() * 500;
+            }
+        }
+
         public double?[] Values { get; set; }
+    }
+
+    public class PocoTwo : PocoBase
+    {
+        /// <inheritdoc />
+        public PocoTwo(bool newIdentity = false)
+            : base(newIdentity)
+        {
+            if (newIdentity)
+            {
+                if (!TakeChance())
+                    FooString = $"String value #{Id}";
+
+                if (!TakeChance())
+                    FooInt = Random.Next(-32000, 32000);
+
+                FooFloat = (float)((Random.NextDouble() - 0.5) * float.MaxValue);
+            }
+        }
+
+        public int? FooInt { get; set; }
+
+        public float FooFloat { get; set; }
+
+        public string FooString { get; set; }
     }
 
     public class PocoOneReader : TableMappingReader<PocoOne>
@@ -85,6 +136,8 @@ namespace ExcelEi.Test
     {
         private string GetNewOutFilePath() =>
             Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}.xlsx");
+
+        private bool _deleteExportedFiles = false;
 
         [Test]
         public void OneTable()
@@ -179,7 +232,89 @@ namespace ExcelEi.Test
                 }
             }
 
-            File.Delete(outPath);
+            if (_deleteExportedFiles)
+                File.Delete(outPath);
+        }
+
+        [Test]
+        public void SimplePoco()
+        {
+            var outPath = GetNewOutFilePath();
+            var workbook = new ExcelPackage(new FileInfo(outPath));
+
+            var dataSetExportConfig = new DataSetExportAutoConfig();
+
+            const string dataTableName = "One";
+            const string sheetName = "OneSheet";
+
+            var configurator = new PocoExportConfigurator<PocoTwo>(sheetName, dataTableName);
+
+            Expression<Func<PocoBase, int>> refId = o => o.Id;
+            Expression<Func<PocoBase, DateTime>> refDateTime = o => o.DateTime;
+            Expression<Func<PocoTwo, long?>> refInt = o => o.FooInt;
+            // implicit conversion from float to double
+            Expression<Func<PocoTwo, double?>> refFloat = o => o.FooFloat;
+            Expression<Func<PocoTwo, string>> refString = o => o.FooString;
+
+            var idColumnSource = PocoColumnSourceFactory.Create(refId);
+            var dateTimeColumnSource = PocoColumnSourceFactory.Create(refDateTime);
+
+            configurator
+                .AddColumn(idColumnSource)
+                .AddColumn(dateTimeColumnSource)
+                .AddColumn(refInt)
+                .AddColumn(refFloat)
+                .AddColumn(refString);
+
+            dataSetExportConfig.AddSheet(configurator.Config);
+
+            var dataSet = new DataSetAdapter();
+            var data1 = Enumerable.Range(0, 100)
+                .Select(i => new PocoTwo(true))
+                .ToList();
+
+            dataSet.Add(data1, dataTableName);
+
+            var exporter = new DataSetToWorkbookExporter(dataSetExportConfig) {DataSet = dataSet};
+
+            exporter.Export(workbook);
+
+            workbook.Save();
+            TestContext.WriteLine($"Saved {outPath}.");
+
+            workbook.Dispose();
+
+            workbook = new ExcelPackage(new FileInfo(outPath));
+
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+
+            var pocoReader = new TableMappingReader<PocoTwo>();
+            pocoReader
+                .Map(o => o.Id)
+                .Map(o => o.DateTime)
+                .Map(o => o.FooInt)
+                .Map(o => o.FooFloat)
+                .Map(o => o.FooString);
+
+            var readPocos = pocoReader.Read(reader);
+
+            Assert.AreEqual(data1.Count, readPocos.Count);
+
+            for (var i = 0; i < data1.Count; ++i)
+            {
+                var saved = data1[i];
+                var read = readPocos[i];
+                Assert.AreEqual(saved.Id, read.Id);
+                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
+                Assert.AreEqual(saved.FooInt, read.FooInt);
+                Assert.AreEqual(saved.FooFloat, read.FooFloat, 0.00000001D);
+                Assert.AreEqual(saved.FooString, read.FooString);
+            }
+
+            workbook.Dispose();
+
+            if (_deleteExportedFiles)
+                File.Delete(outPath);
         }
 
         [Test]
@@ -192,14 +327,14 @@ namespace ExcelEi.Test
 
             var configurator = new PocoExportConfigurator<PocoOne>("OneSheet", "One");
 
-            Expression<Func<PocoOne, int>> refId = o => o.Id;
-            Expression<Func<PocoOne, DateTime>> refDateTime = o => o.DateTime;
+            Expression<Func<PocoBase, int>> refId = o => o.Id;
+            Expression<Func<PocoBase, DateTime>> refDateTime = o => o.DateTime;
             Expression<Func<PocoOne, IList<double?>>> refCollection = o => o.Values;
             Expression<Func<PocoOne, string>> refJoinedCollection = o => o.Values != null ? string.Join(",", o.Values.Select(e => e.ToString())) : null;
 
             configurator
-                .AddColumn(refId)
-                .AddColumn(refDateTime)
+                .AddInheritedColumn(refId)
+                .AddInheritedColumn(refDateTime)
                 .AddColumn(refJoinedCollection, "Joined Values");
 
             configurator.AddCollectionColumns(refCollection, 5, "value#{0}");
@@ -208,11 +343,11 @@ namespace ExcelEi.Test
 
             configurator = new PocoExportConfigurator<PocoOne>("TwoSheet");
 
-            configurator.AddColumn(refDateTime);
+            configurator.AddInheritedColumn(refDateTime);
 
             configurator.AddCollectionColumns(refCollection, 10);
 
-            configurator.AddColumn(refId);
+            configurator.AddInheritedColumn(refId);
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
@@ -243,7 +378,7 @@ namespace ExcelEi.Test
 
             Assert.AreEqual(data1.Count, readPocos.Count);
 
-            for (int i = 0; i < data1.Count; ++i)
+            for (var i = 0; i < data1.Count; ++i)
             {
                 var saved = data1[i];
                 var read = readPocos[i];
@@ -262,7 +397,8 @@ namespace ExcelEi.Test
 
             workbook.Dispose();
 
-            File.Delete(outPath);
+            if (_deleteExportedFiles)
+                File.Delete(outPath);
         }
     }
 }

@@ -115,7 +115,7 @@ namespace ExcelEi.Write
         {
             Check.DoRequireArgumentNotNull(memberName, nameof(memberName));
 
-            var columnSource = PocoColumnSource<TE, TV>.CreateReflection(memberName);
+            var columnSource = PocoColumnSourceFactory.CreateReflection<TV>(typeof(TE), memberName);
 
             Add(columnSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
 
@@ -142,15 +142,67 @@ namespace ExcelEi.Write
         /// </param>
         public PocoExportConfigurator<TE> AddColumn<TV>(Expression<Func<TE, TV>> getter, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
         {
+            return AddInheritedColumn(getter, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Add column getting values from property of non-collection type by lambda expression which
+        ///     is compiled and cached. The expression can accept base <see cref="PocoType"/> base class instance; in this
+        ///     case type safety will be checked at runtime as it cannot be enforced at compile time.
+        /// </summary>
+        /// <param name="getter">
+        ///     Mandatory, reference returning property or field or arbitrary value. In the latter case
+        ///     <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
+        ///     for identification. The expression is compiled, cached and used for retrieving values for the column.
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Whether to fit column width to content after export.
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <remarks>
+        ///     There should be really reverse type constraint 'TE: TA', TA should be base class for TE, but
+        ///     I cannot find a way to express it.
+        /// </remarks>
+        public PocoExportConfigurator<TE> AddInheritedColumn<TA, TV>(Expression<Func<TA, TV>> getter, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+            where   TA: class
+        {
             Check.DoRequireArgumentNotNull(getter, nameof(getter));
+            Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
 
-            var columnSource = PocoColumnSource<TE, TV>.Create(getter);
+            var columnSource = PocoColumnSourceFactory.Create(getter);
             if (string.IsNullOrEmpty(columnSource.Name))
-            {
                 columnSource.Name = sheetColumnCaption;
-            }
 
-            Add(columnSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+            return AddColumn(columnSource, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Low level method allowing client to configure column source in any way they need.
+        ///     Creates column next to the right most existing column.
+        /// </summary>
+        /// <param name="columnDataSource">
+        ///     Encapsulates data retrieval for the column.
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Optional, column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export.
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        public PocoExportConfigurator<TE> AddColumn(IColumnDataSource columnDataSource, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+        {
+            Add(columnDataSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
 
             return this;
         }
@@ -234,8 +286,7 @@ namespace ExcelEi.Write
             Check.DoRequireArgumentNotNull(collectionMemberGetter, nameof(collectionMemberGetter));
             Check.DoCheckArgument(columnCount > 0 && columnCount < 16384, nameof(columnCount));
 
-            var memberInfo = (collectionMemberGetter.Body as MemberExpression)?.Member
-                             ?? ((collectionMemberGetter.Body as UnaryExpression)?.Operand as MemberExpression)?.Member;
+            var memberInfo = ExpressionHelper.GetMember(collectionMemberGetter);
 
             Check.DoCheckArgument(memberInfo != null || !string.IsNullOrWhiteSpace(sheetColumnCaptionFormat)
                                   , "If collection expression does not refer to property or field, column caption format must be provided");
@@ -281,7 +332,8 @@ namespace ExcelEi.Write
         ///     0-based sheet column index relative to left most column to which export is performed
         /// </param>
         /// <param name="sheetColumnCaption">
-        ///     Column header text in excel.
+        ///     Column header text in excel. Optional if <paramref name="columnDataSource"/> has non-null virtual column name.
+        ///     Empty string allowed.
         /// </param>
         /// <param name="autoFit">
         ///     Whether to fit column width to content after export.
@@ -295,8 +347,9 @@ namespace ExcelEi.Write
         public DataColumnExportAutoConfig Add(IColumnDataSource columnDataSource, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
         {
             Check.DoRequireArgumentNotNull(columnDataSource, nameof(columnDataSource));
+            Check.DoCheckArgument(sheetColumnCaption != null || columnDataSource.Name != null, "Non-null column caption cannot be resolved.");
 
-            if (string.IsNullOrEmpty(sheetColumnCaption) && !string.IsNullOrEmpty(columnDataSource.Name))
+            if (string.IsNullOrEmpty(sheetColumnCaption) && columnDataSource.Name != null)
                 sheetColumnCaption = columnDataSource.Name;
 
             var config = new DataColumnExportAutoConfig(Config, sheetColumnIndex, sheetColumnCaption, columnDataSource);
