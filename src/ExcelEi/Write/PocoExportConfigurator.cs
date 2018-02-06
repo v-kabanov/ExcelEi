@@ -81,12 +81,14 @@ namespace ExcelEi.Write
         ///     Column header text in excel. Also goes into <see cref="IColumnDataSource"/>'s <see cref="IColumnDataSource.Name"/>.
         /// </param>
         /// <param name="autoFit">
-        ///     Whether to fit column width to content after export.
+        ///     Optional, whether to fit column width to content after export (default is true).
         /// </param>
         /// <param name="format">
         ///     Optional format for excel cells.
         /// </param>
-        /// <returns></returns>
+        /// <returns>
+        ///     Itself
+        /// </returns>
         public DataColumnExportAutoConfig AddColumn<TV>(Func<TE, TV> valueExtractor, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
         {
             var columnSource = new PocoColumnSource<TE, TV>(sheetColumnCaption, valueExtractor);
@@ -105,12 +107,14 @@ namespace ExcelEi.Write
         ///     Column header text in excel.
         /// </param>
         /// <param name="autoFit">
-        ///     Whether to fit column width to content after export.
+        ///     Optional, whether to fit column width to content after export (default is true).
         /// </param>
         /// <param name="format">
         ///     Optional format for excel cells.
         /// </param>
-        /// <returns></returns>
+        /// <returns>
+        ///     Itself
+        /// </returns>
         public PocoExportConfigurator<TE> AddColumn<TV>(string memberName, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotNull(memberName, nameof(memberName));
@@ -159,11 +163,14 @@ namespace ExcelEi.Write
         ///     Column header text in excel.
         /// </param>
         /// <param name="autoFit">
-        ///     Whether to fit column width to content after export.
+        ///     Optional, whether to fit column width to content after export (default is true).
         /// </param>
         /// <param name="format">
         ///     Optional format for excel cells.
         /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
         /// <remarks>
         ///     There should be really reverse type constraint 'TE: TA', TA should be base class for TE, but
         ///     I cannot find a way to express it.
@@ -192,7 +199,7 @@ namespace ExcelEi.Write
         ///     Optional, column header text in excel.
         /// </param>
         /// <param name="autoFit">
-        ///     Optional, whether to fit column width to content after export.
+        ///     Optional, whether to fit column width to content after export (default is true).
         /// </param>
         /// <param name="format">
         ///     Optional format for excel cells.
@@ -220,9 +227,15 @@ namespace ExcelEi.Write
         /// <param name="sheetColumnCaptionFormat">
         ///     Optional, default is same as <paramref name="memberName"/>; columns will be named by appending '[index]' to the base.
         /// </param>
-        /// <param name="autoFit"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
         public PocoExportConfigurator<TE> AddCollectionColumns<TV>(string memberName, int columnCount, string sheetColumnCaptionFormat, bool? autoFit = null, string format = null)
         {
             Check.DoRequireArgumentNotBlank(memberName, nameof(memberName));
@@ -277,9 +290,15 @@ namespace ExcelEi.Write
         ///     .Net format string accepting index as the only argument. Default is 'MemberName[{0}]' where MemberName
         ///     is <paramref name="collectionMemberGetter"/>'s name.
         /// </param>
-        /// <param name="autoFit"></param>
-        /// <param name="format"></param>
-        /// <returns></returns>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
         public PocoExportConfigurator<TE> AddCollectionColumns<TV>(
             Expression<Func<TE, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionFormat = null, bool? autoFit = null, string format = null)
         {
@@ -336,7 +355,7 @@ namespace ExcelEi.Write
         ///     Empty string allowed.
         /// </param>
         /// <param name="autoFit">
-        ///     Whether to fit column width to content after export.
+        ///     Optional, whether to fit column width to content after export (default is true).
         /// </param>
         /// <param name="format">
         ///     Optional format for excel cells.

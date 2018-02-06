@@ -139,10 +139,14 @@ namespace ExcelEi.Test
     [TestFixture]
     public class DataSetToWorkbookExportTest
     {
-        private string GetNewOutFilePath() =>
-            Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}.xlsx");
+        private int _sequenceNo;
 
-        private bool _deleteExportedFiles = false;
+        private int NextNo() => Interlocked.Increment(ref _sequenceNo);
+
+        private string GetNewOutFilePath() =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}-{NextNo()}.xlsx");
+
+        private bool _deleteExportedFiles = true;
 
         [Test]
         public void OneTable()
@@ -271,7 +275,10 @@ namespace ExcelEi.Test
                 .AddColumn(refInt)
                 .AddColumn(refFloat)
                 .AddColumn(refString)
-                .AddColumn(refFieldInt);
+                .AddColumn(refFieldInt)
+                // same column via reflection; duplicate caption allowed when exporting, but not when importing
+                // as the reader would not be able to choose which column to get data from
+                .AddColumn<int?>(nameof(PocoTwo.FieldInt), "ReflectionFieldInt");
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
