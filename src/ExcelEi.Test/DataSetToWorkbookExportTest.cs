@@ -93,6 +93,9 @@ namespace ExcelEi.Test
                     FooInt = Random.Next(-32000, 32000);
 
                 FooFloat = (float)((Random.NextDouble() - 0.5) * float.MaxValue);
+
+                if (!TakeChance())
+                    FieldInt = Random.Next();
             }
         }
 
@@ -101,6 +104,8 @@ namespace ExcelEi.Test
         public float FooFloat { get; set; }
 
         public string FooString { get; set; }
+
+        public int? FieldInt;
     }
 
     public class PocoOneReader : TableMappingReader<PocoOne>
@@ -255,6 +260,7 @@ namespace ExcelEi.Test
             // implicit conversion from float to double
             Expression<Func<PocoTwo, double?>> refFloat = o => o.FooFloat;
             Expression<Func<PocoTwo, string>> refString = o => o.FooString;
+            Expression<Func<PocoTwo, long?>> refFieldInt = o => o.FieldInt;
 
             var idColumnSource = PocoColumnSourceFactory.Create(refId);
             var dateTimeColumnSource = PocoColumnSourceFactory.Create(refDateTime);
@@ -264,7 +270,8 @@ namespace ExcelEi.Test
                 .AddColumn(dateTimeColumnSource)
                 .AddColumn(refInt)
                 .AddColumn(refFloat)
-                .AddColumn(refString);
+                .AddColumn(refString)
+                .AddColumn(refFieldInt);
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
@@ -294,7 +301,8 @@ namespace ExcelEi.Test
                 .Map(o => o.DateTime)
                 .Map(o => o.FooInt)
                 .Map(o => o.FooFloat)
-                .Map(o => o.FooString);
+                .Map(o => o.FooString)
+                .Map(o => o.FieldInt);
 
             var readPocos = pocoReader.Read(reader);
 
