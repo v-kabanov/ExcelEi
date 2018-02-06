@@ -151,9 +151,15 @@ namespace ExcelEi.Write
 
         /// <summary>
         ///     Add column getting values from property of non-collection type by lambda expression which
-        ///     is compiled and cached. The expression can accept base <see cref="PocoType"/> base class instance; in this
+        ///     is compiled and cached. The expression can accept <see cref="PocoType"/>'s base class instance; in this
         ///     case type safety will be checked at runtime as it cannot be enforced at compile time.
         /// </summary>
+        /// <typeparam name="TA">
+        ///     Instance type accepted by <paramref name="getter"/>; same as <typeparamref name="TE"/> or its base class
+        /// </typeparam>
+        /// <typeparam name="TV">
+        ///     Source data type - type returned by <paramref name="getter"/>.
+        /// </typeparam>
         /// <param name="getter">
         ///     Mandatory, reference returning property or field or arbitrary value. In the latter case
         ///     <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
@@ -269,8 +275,6 @@ namespace ExcelEi.Write
             return this;
         }
 
-        
-
         /// <summary>
         ///     Configure export of generic list (or array) member with up to <paramref name="columnCount"/> elements.
         ///     A column will be created for every collection item, limited by max number supported by excel.
@@ -302,7 +306,56 @@ namespace ExcelEi.Write
         public PocoExportConfigurator<TE> AddCollectionColumns<TV>(
             Expression<Func<TE, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionFormat = null, bool? autoFit = null, string format = null)
         {
+            return AddInheritedCollectionColumns(collectionMemberGetter, columnCount, sheetColumnCaptionFormat, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Configure export of generic list (or array) member with up to <paramref name="columnCount"/> elements.
+        ///     A column will be created for every collection item, limited by max number supported by excel.
+        ///     The expression <paramref name="collectionMemberGetter"/> can accept <see cref="PocoType"/>'s base class instance; in this
+        ///     case type safety will be checked at runtime as it cannot be enforced at compile time.
+        /// </summary>
+        /// <typeparam name="TA">
+        ///     Instance type accepted by <paramref name="collectionMemberGetter"/>; same as <typeparamref name="TE"/> or its base class
+        /// </typeparam>
+        /// <typeparam name="TV">
+        ///     Element type of the collection returned by <paramref name="collectionMemberGetter"/>.
+        /// </typeparam>
+        /// <param name="collectionMemberGetter">
+        ///     Name of property or field returning array or <see cref="IList{TV}"/>, mandatory. If 
+        ///     Mandatory, reference returning property or field implementing <see cref="IList{TV}"/>.
+        ///     If it is not a property or field reference, <paramref name="sheetColumnCaptionFormat"/> must be specified
+        ///     and it will be used as source column name base for identification.
+        ///     The expression is compiled, cached and used for retrieving values for the column.
+        /// </param>
+        /// <param name="columnCount">
+        ///     Number of columns to create. Collection elements exceeding this limit will not be exported.
+        ///     Max number of columns supported by excel is 16384.
+        /// </param>
+        /// <param name="sheetColumnCaptionFormat">
+        ///     .Net format string accepting index as the only argument. Default is 'MemberName[{0}]' where MemberName
+        ///     is <paramref name="collectionMemberGetter"/>'s name.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        /// <remarks>
+        ///     There should be really reverse type constraint 'TE: TA', TA should be base class for TE, but
+        ///     I cannot find a way to express it.
+        /// </remarks>
+        public PocoExportConfigurator<TE> AddInheritedCollectionColumns<TA, TV>(
+            Expression<Func<TA, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionFormat = null, bool? autoFit = null, string format = null)
+            where TA: class
+        {
             Check.DoRequireArgumentNotNull(collectionMemberGetter, nameof(collectionMemberGetter));
+            Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
+
             Check.DoCheckArgument(columnCount > 0 && columnCount < 16384, nameof(columnCount));
 
             var memberInfo = ExpressionHelper.GetMember(collectionMemberGetter);
@@ -392,17 +445,20 @@ namespace ExcelEi.Write
             return list[index];
         }
 
-        private void AddCollectionColumns<TV>(Func<TE, IList<TV>> collectionGetter,
+        private void AddCollectionColumns<TA, TV>(Func<TA, IList<TV>> collectionGetter,
             int columnCount,
             string sheetColumnCaptionFormat,
             bool? autoFit = null,
             string format = null)
+            where TA: class
         {
+            Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
+
             for (var i = 0; i < columnCount; ++i)
             {
                 var collectionIndex = i;
                 var columnName = string.Format(sheetColumnCaptionFormat, collectionIndex);
-                var columnSource = new PocoColumnSource<TE, TV>(columnName, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
+                var columnSource = new PocoColumnSource<TA, TV>(columnName, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
                 Add(columnSource, Config.Columns.Count, columnName, autoFit, format);
             }
         }
