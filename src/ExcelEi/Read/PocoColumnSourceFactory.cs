@@ -36,7 +36,12 @@ namespace ExcelEi.Read
         ///     Optional, name of the column in the virtual data table. By default it will be derived from referenced
         ///     member name.
         /// </param>
-        public static PocoColumnSource<TA, TV> Create<TA, TV>(Expression<Func<TA, TV>> getter, string name = null)
+        /// <param name="preserveNameIfResolved">
+        ///     Instructs that <paramref name="name"/> must not override resolved name, only be set if member name is
+        ///     not resolved (prefer resolved name).
+        /// </param>
+        public static PocoColumnSource<TA, TV> Create<TA, TV>(
+            Expression<Func<TA, TV>> getter, string name = null, bool preserveNameIfResolved = true)
             where TA : class
         {
             Check.DoRequireArgumentNotNull(getter, nameof(getter));
@@ -48,7 +53,11 @@ namespace ExcelEi.Read
             var memberDescriptor = new ExportedMemberDescriptor<TA, TV>(compiledGetter, memberInfo?.Name);
 
             var result = new PocoColumnSource<TA, TV>(memberDescriptor);
-            if (!string.IsNullOrEmpty(name))
+
+            var ifNameResolved = !string.IsNullOrEmpty(result.Name);
+
+            // if name is resolved and preserve option is ON, leave resolved name
+            if (!string.IsNullOrEmpty(name) && (!ifNameResolved || !preserveNameIfResolved))
                 result.Name = name;
 
             return result;
@@ -78,11 +87,18 @@ namespace ExcelEi.Read
         ///     Describe a property or field via reflection.
         /// </summary>
         /// <param name="pocoType">
-        ///     Type containing property or field.
+        ///     Type containing property or field. If property it must not be indexed.
         /// </param>
         /// <param name="memberName">
         ///     Mandatory, name of existing property or field.
         /// </param>
+        /// <exception cref="ArgumentException">
+        ///     Member identified by <paramref name="memberName"/> cannot be read due to: <br />
+        ///         - it does not exist <br />
+        ///         - or it's not readable <br />
+        ///         - or it is an indexed property <br />
+        ///         - or it cannot be implicitly converted to <typeparamref name="TV"/> <br />
+        /// </exception>
         public static IExportedMemberDescriptor<object, TV> CreateReflectionMemberDescriptor<TV>(Type pocoType, string memberName)
         {
             var memberInfo = pocoType.GetMember(memberName).FirstOrDefault(i => i is PropertyInfo || i is FieldInfo);
@@ -95,6 +111,8 @@ namespace ExcelEi.Read
             var propertyInfo = memberInfo as PropertyInfo;
             if (propertyInfo != null)
             {
+                Check.DoCheckArgument(propertyInfo.GetIndexParameters().Length == 0
+                    , () => $"Property {memberName} of {pocoType.Name} is indexed which is not supported.");
                 Check.DoCheckArgument(propertyInfo.CanRead, () => $"Property {memberName} of {pocoType.Name} is not readable");
                 dataType = propertyInfo.PropertyType;
                 valueExtractor = e => (TV) propertyInfo.GetValue(e);
@@ -102,7 +120,7 @@ namespace ExcelEi.Read
             else
             {
                 var fieldInfo = memberInfo as FieldInfo;
-                Check.DoCheckArgument(fieldInfo != null, () => $"Firld or property {memberName} was not found on {pocoType.Name}.");
+                Check.DoCheckArgument(fieldInfo != null, () => $"Field or property {memberName} was not found on {pocoType.Name}.");
                 Debug.Assert(fieldInfo != null, nameof(fieldInfo) + " != null");
                 dataType = fieldInfo.FieldType;
                 valueExtractor = e => (TV) fieldInfo.GetValue(e);
