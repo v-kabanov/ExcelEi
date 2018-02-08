@@ -80,6 +80,19 @@ namespace ExcelEi.Test
 
     public class PocoThree : PocoOne
     {
+        /// <inheritdoc />
+        public PocoThree()
+        {
+        }
+
+        /// <inheritdoc />
+        public PocoThree(int valueCount)
+            : base(valueCount)
+        {
+            IntegerFromPocoThree = Random.Next();
+        }
+
+        public int IntegerFromPocoThree { get; set; }
     }
 
     public class PocoTwo : PocoBase
@@ -112,10 +125,11 @@ namespace ExcelEi.Test
         public int? FieldInt;
     }
 
-    public class PocoOneReader : TableMappingReader<PocoOne>
+    public class PocoOneBaseReader<T> : TableMappingReader<T>
+        where T: PocoOne
     {
         /// <inheritdoc />
-        public PocoOneReader()
+        public PocoOneBaseReader()
         {
             Map(o => o.Id);
             Map(o => o.DateTime);
@@ -140,6 +154,19 @@ namespace ExcelEi.Test
         }
     }
 
+    public class PocoOneReader : PocoOneBaseReader<PocoOne>
+    {
+    }
+
+    public class PocoThreeReader : PocoOneBaseReader<PocoThree>
+    {
+        /// <inheritdoc />
+        public PocoThreeReader()
+        {
+            Map(o => o.IntegerFromPocoThree);
+        }
+    }
+
     [TestFixture]
     public class DataSetToWorkbookExportTest
     {
@@ -147,15 +174,15 @@ namespace ExcelEi.Test
 
         private int NextNo() => Interlocked.Increment(ref _sequenceNo);
 
-        private string GetNewOutFilePath() =>
-            Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}-{NextNo()}.xlsx");
+        private string GetNewOutFilePath(string suffix = "") =>
+            Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}-{NextNo()}{suffix}.xlsx");
 
         private bool _deleteExportedFiles = false;
 
         [Test]
         public void OneTable()
         {
-            var outPath = GetNewOutFilePath();
+            var outPath = GetNewOutFilePath("-from-ado.net");
             var workbook = new ExcelPackage(new FileInfo(outPath));
 
             var dataSet = new DataSet();
@@ -252,7 +279,7 @@ namespace ExcelEi.Test
         [Test]
         public void SimplePoco()
         {
-            var outPath = GetNewOutFilePath();
+            var outPath = GetNewOutFilePath("-simple");
             var workbook = new ExcelPackage(new FileInfo(outPath));
 
             var dataSetExportConfig = new DataSetExportAutoConfig();
@@ -343,7 +370,7 @@ namespace ExcelEi.Test
         [Test]
         public void ArrayFromPoco()
         {
-            var outPath = GetNewOutFilePath();
+            var outPath = GetNewOutFilePath("-array");
             var workbook = new ExcelPackage(new FileInfo(outPath));
 
             var dataSetExportConfig = new DataSetExportAutoConfig();
@@ -424,11 +451,10 @@ namespace ExcelEi.Test
                 File.Delete(outPath);
         }
 
-
         [Test]
         public void InheritedMembers()
         {
-            var outPath = GetNewOutFilePath();
+            var outPath = GetNewOutFilePath("-inherited");
             var workbook = new ExcelPackage(new FileInfo(outPath));
 
             var dataSetExportConfig = new DataSetExportAutoConfig();
@@ -461,10 +487,10 @@ namespace ExcelEi.Test
 
             var dataSet = new DataSetAdapter();
             var data1 = Enumerable.Range(0, 100)
-                .Select(i => new PocoOne(6))
+                .Select(i => new PocoThree(6))
                 .ToList();
             var data2 = Enumerable.Range(0, 1000)
-                .Select(i => new PocoOne(9))
+                .Select(i => new PocoThree(9))
                 .ToList();
 
             dataSet.Add(data1, "One");
@@ -483,6 +509,92 @@ namespace ExcelEi.Test
 
             var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
             var readPocos = new PocoOneReader().Read(reader);
+
+            Assert.AreEqual(data1.Count, readPocos.Count);
+
+            for (var i = 0; i < data1.Count; ++i)
+            {
+                var saved = data1[i];
+                var read = readPocos[i];
+                Assert.AreEqual(saved.Id, read.Id);
+                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
+                Assert.AreEqual(saved.Values.Length, read.Values.Length);
+
+                for (var j = 0; j < saved.Values.Length; ++j)
+                {
+                    if (saved.Values[j].HasValue)
+                        Assert.AreEqual(saved.Values[j].Value, read.Values[j], 0.0000001D);
+                    else
+                        Assert.IsFalse(read.Values[j].HasValue);
+                }
+            }
+
+            workbook.Dispose();
+
+            if (_deleteExportedFiles)
+                File.Delete(outPath);
+        }
+
+        [Test]
+        public void Polymorphic()
+        {
+            var outPath = GetNewOutFilePath("-polymorphic");
+            var workbook = new ExcelPackage(new FileInfo(outPath));
+
+            var dataSetExportConfig = new DataSetExportAutoConfig();
+
+            var configurator = new PocoExportConfigurator<PocoOne>("OneSheet", "One");
+
+            Expression<Func<PocoBase, int>> refId = o => o.Id;
+            Expression<Func<PocoBase, DateTime>> refDateTime = o => o.DateTime;
+            Expression<Func<PocoOne, IList<double?>>> refCollection = o => o.Values;
+            Expression<Func<PocoOne, string>> refJoinedCollection = o => o.Values != null ? string.Join(",", o.Values.Select(e => e.ToString())) : null;
+
+            Expression<Func<PocoThree, int>> refPocoThreeInt = o => o.IntegerFromPocoThree;
+
+            configurator
+                .AddInheritedColumn(refId)
+                .AddInheritedColumn(refDateTime)
+                .AddColumn(refJoinedCollection, "Joined Values")
+                .AddCollectionColumns(refCollection, 5, "value#{0}")
+                .AddColumnPolymorphic(refPocoThreeInt);
+
+            dataSetExportConfig.AddSheet(configurator.Config);
+
+            configurator = new PocoExportConfigurator<PocoOne>("TwoSheet");
+
+            configurator
+                .AddInheritedColumn(refDateTime)
+                .AddInheritedCollectionColumns(refCollection, 10)
+                .AddInheritedColumn(refId)
+                .AddColumnPolymorphic(refPocoThreeInt);
+
+            dataSetExportConfig.AddSheet(configurator.Config);
+
+            var dataSet = new DataSetAdapter();
+            var data1 = Enumerable.Range(0, 100)
+                .Select(i => new PocoThree(6))
+                .ToList();
+            var data2 = Enumerable.Range(0, 1000)
+                .Select(i => new PocoThree(9))
+                .ToList();
+
+            dataSet.Add(data1, "One");
+            dataSet.Add(data2, "TwoSheet");
+
+            var exporter = new DataSetToWorkbookExporter(dataSetExportConfig) {DataSet = dataSet};
+
+            exporter.Export(workbook);
+
+            workbook.Save();
+            TestContext.WriteLine($"Saved {outPath}.");
+
+            workbook.Dispose();
+
+            workbook = new ExcelPackage(new FileInfo(outPath));
+
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+            var readPocos = new PocoThreeReader().Read(reader);
 
             Assert.AreEqual(data1.Count, readPocos.Count);
 
