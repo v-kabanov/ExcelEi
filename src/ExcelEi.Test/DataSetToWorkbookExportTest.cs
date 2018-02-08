@@ -167,6 +167,49 @@ namespace ExcelEi.Test
         }
     }
 
+    public class PocoBaseExportConfigurator<T> : PocoExportConfigurator<T>
+        where T: PocoBase
+    {
+        /// <inheritdoc />
+        public PocoBaseExportConfigurator(string sheetName, string dataTableName)
+            : base(sheetName, dataTableName)
+        {
+            AddColumn(o => o.Id);
+            AddColumn(o => o.DateTime);
+        }
+    }
+
+    public class PocoOneExportBaseConfigurator<T> : PocoBaseExportConfigurator<T>
+        where T: PocoOne
+    {
+        /// <inheritdoc />
+        public PocoOneExportBaseConfigurator(string sheetName, string dataTableName)
+            : base(sheetName, dataTableName)
+        {
+            AddColumn(o => o.Values != null ? string.Join(",", o.Values.Select(e => e.ToString())) : null, "Joined Values");
+            AddCollectionColumns(o => o.Values, 5, "value#{0}");
+        }
+    }
+
+    public class PocoOneExportConfigurator : PocoOneExportBaseConfigurator<PocoOne>
+    {
+        /// <inheritdoc />
+        public PocoOneExportConfigurator(string sheetName, string dataTableName)
+            : base(sheetName, dataTableName)
+        {
+        }
+    }
+
+    public class PocoThreeExportConfigurator : PocoOneExportBaseConfigurator<PocoThree>
+    {
+        /// <inheritdoc />
+        public PocoThreeExportConfigurator(string sheetName)
+            : base(sheetName, sheetName)
+        {
+            AddColumn(o => o.IntegerFromPocoThree);
+        }
+    }
+
     [TestFixture]
     public class DataSetToWorkbookExportTest
     {
@@ -177,7 +220,7 @@ namespace ExcelEi.Test
         private string GetNewOutFilePath(string suffix = "") =>
             Path.Combine(TestContext.CurrentContext.WorkDirectory, $"excelei-{DateTime.Now:MM-dd-HHmmss}-{NextNo()}{suffix}.xlsx");
 
-        private bool _deleteExportedFiles = false;
+        private bool _deleteExportedFiles = true;
 
         [Test]
         public void OneTable()
@@ -375,29 +418,20 @@ namespace ExcelEi.Test
 
             var dataSetExportConfig = new DataSetExportAutoConfig();
 
-            var configurator = new PocoExportConfigurator<PocoOne>("OneSheet", "One");
-
             Expression<Func<PocoBase, int>> refId = o => o.Id;
             Expression<Func<PocoBase, DateTime>> refDateTime = o => o.DateTime;
             Expression<Func<PocoOne, IList<double?>>> refCollection = o => o.Values;
-            Expression<Func<PocoOne, string>> refJoinedCollection = o => o.Values != null ? string.Join(",", o.Values.Select(e => e.ToString())) : null;
+
+            // predefined configurator reusing mappings from base class export configurators
+            dataSetExportConfig.AddSheet(new PocoOneExportConfigurator("OneSheet", "One").Config);
+
+            // adhoc configurator
+            var configurator = new PocoExportConfigurator<PocoOne>("TwoSheet");
 
             configurator
-                .AddInheritedColumn(refId)
                 .AddInheritedColumn(refDateTime)
-                .AddColumn(refJoinedCollection, "Joined Values");
-
-            configurator.AddCollectionColumns(refCollection, 5, "value#{0}");
-
-            dataSetExportConfig.AddSheet(configurator.Config);
-
-            configurator = new PocoExportConfigurator<PocoOne>("TwoSheet");
-
-            configurator.AddInheritedColumn(refDateTime);
-
-            configurator.AddCollectionColumns(refCollection, 10);
-
-            configurator.AddInheritedColumn(refId);
+                .AddCollectionColumns(refCollection, 10)
+                .AddInheritedColumn(refId);
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
@@ -561,15 +595,8 @@ namespace ExcelEi.Test
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
-            configurator = new PocoExportConfigurator<PocoOne>("TwoSheet");
 
-            configurator
-                .AddInheritedColumn(refDateTime)
-                .AddInheritedCollectionColumns(refCollection, 10)
-                .AddInheritedColumn(refId)
-                .AddColumnPolymorphic(refPocoThreeInt);
-
-            dataSetExportConfig.AddSheet(configurator.Config);
+            dataSetExportConfig.AddSheet(new PocoThreeExportConfigurator("TwoSheet").Config);
 
             var dataSet = new DataSetAdapter();
             var data1 = Enumerable.Range(0, 100)
