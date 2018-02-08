@@ -109,7 +109,7 @@ namespace ExcelEi.Write
         /// </returns>
         public DataColumnExportAutoConfig AddColumn<TV>(Func<TE, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
         {
-            return AddColumnAllowPocoCast(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace ExcelEi.Write
         {
             Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
 
-            return AddColumnAllowPocoCast(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace ExcelEi.Write
             Func<TA, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
             where TA: class, TE
         {
-            return AddColumnAllowPocoCast(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace ExcelEi.Write
         /// <returns>
         ///     New column configuration (can be further customized).
         /// </returns>
-        public DataColumnExportAutoConfig AddColumnAllowPocoCast<TA, TV>(
+        public DataColumnExportAutoConfig AddColumnPolymorphic<TA, TV>(
             Func<TA, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
             where TA: class
         {
@@ -231,7 +231,7 @@ namespace ExcelEi.Write
                 , () => $"{PocoType.Name} cannot be cast to {typeof(TA).Name}");
 
             var columnSource = new PocoColumnSource<TA, TV>(sheetColumnCaption, valueGetter);
-            var config = Add(columnSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            var config = AddColumn(columnSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
 
             return config;
         }
@@ -301,7 +301,7 @@ namespace ExcelEi.Write
 
             var columnSource = PocoColumnSourceFactory.CreateReflection<TV>(typeof(TA), memberName);
 
-            Add(columnSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+            AddColumn(columnSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
 
             return this;
         }
@@ -410,7 +410,7 @@ namespace ExcelEi.Write
             , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
             where   TA: class, TE
         {
-            return AddColumnAllowPocoCast(valueGetter, sheetColumnCaption, autoFit, format);
+            return AddColumnPolymorphic(valueGetter, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -443,7 +443,7 @@ namespace ExcelEi.Write
         /// <returns>
         ///     Itself
         /// </returns>
-        public PocoExportConfigurator<TE> AddColumnAllowPocoCast<TA, TV>(
+        public PocoExportConfigurator<TE> AddColumnPolymorphic<TA, TV>(
             Expression<Func<TA, TV>> valueGetter
             , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
             where   TA: class
@@ -478,38 +478,7 @@ namespace ExcelEi.Write
         /// </returns>
         public PocoExportConfigurator<TE> AddColumn(IColumnDataSource columnDataSource, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
         {
-            return AddColumn(columnDataSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
-        }
-
-        /// <summary>
-        ///     Low level method allowing client to configure column source in any way they need.
-        ///     Creates column in specific arbitrary position.
-        /// </summary>
-        /// <param name="columnDataSource">
-        ///     Encapsulates data retrieval for the column.
-        /// </param>
-        /// <param name="sheetColumnIndex">
-        ///     0-based sheet column index relative to left most column to which export is performed.
-        /// </param>
-        /// <param name="sheetColumnCaption">
-        ///     Optional, column header text in excel.
-        /// </param>
-        /// <param name="autoFit">
-        ///     Optional, whether to fit column width to content after export (default is true).
-        /// </param>
-        /// <param name="format">
-        ///     Optional format for excel cells.
-        /// </param>
-        /// <returns>
-        ///     Itself
-        /// </returns>
-        public PocoExportConfigurator<TE> AddColumn(
-            IColumnDataSource columnDataSource, int sheetColumnIndex
-            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
-        {
-            Check.DoCheckArgument(sheetColumnIndex >= 0, "Column index cannot be negative.");
-
-            Add(columnDataSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            AddColumn(columnDataSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
 
             return this;
         }
@@ -519,7 +488,7 @@ namespace ExcelEi.Write
         ///     A column will be created for every collection item.
         /// </summary>
         /// <param name="memberName">
-        ///     Name of property or field returning array or <see cref="IList"/>, mandatory
+        ///     Name of property or field returning array or <see cref="IList{TV}"/>, mandatory.
         /// </param>
         /// <param name="columnCount">
         ///     Number of columns to create. Collection elements exceeding this limit will not be exported.
@@ -650,7 +619,7 @@ namespace ExcelEi.Write
         {
             Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
 
-            return AddCollectionColumnAllowPocoCast(collectionMemberGetter, columnCount, sheetColumnCaptionFormat, autoFit, format);
+            return AddCollectionColumnPolymorphic(collectionMemberGetter, columnCount, sheetColumnCaptionFormat, autoFit, format);
         }
 
         /// <summary>
@@ -698,7 +667,7 @@ namespace ExcelEi.Write
             Expression<Func<TA, IList<TV>>> collectionMemberGetter, int columnCount, string sheetColumnCaptionFormat = null, bool? autoFit = null, string format = null)
             where TA: class, TE
         {
-            return AddCollectionColumnAllowPocoCast(collectionMemberGetter, columnCount, sheetColumnCaptionFormat, autoFit, format);
+            return AddCollectionColumnPolymorphic(collectionMemberGetter, columnCount, sheetColumnCaptionFormat, autoFit, format);
         }
 
         /// <summary>
@@ -742,7 +711,7 @@ namespace ExcelEi.Write
         ///     There should be really reverse type constraint 'TE: TA', TA should be base class for TE, but
         ///     I cannot find a way to express it.
         /// </remarks>
-        public PocoExportConfigurator<TE> AddCollectionColumnAllowPocoCast<TA, TV>(
+        public PocoExportConfigurator<TE> AddCollectionColumnPolymorphic<TA, TV>(
             Expression<Func<TA, IList<TV>>> collectionMemberGetter
             , int columnCount
             , string sheetColumnCaptionFormat = null, bool? autoFit = null, string format = null)
@@ -812,10 +781,11 @@ namespace ExcelEi.Write
         /// <returns>
         ///     Itself
         /// </returns>
-        public DataColumnExportAutoConfig Add(IColumnDataSource columnDataSource, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
+        public DataColumnExportAutoConfig AddColumn(IColumnDataSource columnDataSource, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
         {
             Check.DoRequireArgumentNotNull(columnDataSource, nameof(columnDataSource));
             Check.DoCheckArgument(sheetColumnCaption != null || columnDataSource.Name != null, "Non-null column caption cannot be resolved.");
+            Check.DoCheckArgument(sheetColumnIndex >= 0, "Column index cannot be negative.");
 
             if (string.IsNullOrEmpty(sheetColumnCaption) && columnDataSource.Name != null)
                 sheetColumnCaption = columnDataSource.Name;
@@ -855,7 +825,7 @@ namespace ExcelEi.Write
                 var collectionIndex = i;
                 var columnName = string.Format(sheetColumnCaptionFormat, collectionIndex);
                 var columnSource = new PocoColumnSource<TA, TV>(columnName, o => TryGetCollectionElement(collectionGetter(o), collectionIndex));
-                Add(columnSource, Config.Columns.Count, columnName, autoFit, format);
+                AddColumn(columnSource, Config.Columns.Count, columnName, autoFit, format);
             }
         }
     }
