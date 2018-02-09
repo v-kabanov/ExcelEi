@@ -59,6 +59,7 @@ namespace ExcelEi.Write
         ///     Data table.
         /// </param>
         public DataSetExportAutoConfig(DataTable dataTable)
+            : this()
         {
             Check.DoRequireArgumentNotNull(dataTable, "dataTable");
             _tables.Add(new DataTableExportAutoConfig(dataTable));
@@ -71,6 +72,7 @@ namespace ExcelEi.Write
         ///     Defines export of 1 data table into 1 sheet.
         /// </param>
         public DataSetExportAutoConfig(ISheetExportConfig sheetConfig)
+            : this()
         {
             Check.DoRequireArgumentNotNull(sheetConfig, "sheetConfig");
 

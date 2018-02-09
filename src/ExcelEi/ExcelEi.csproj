@@ -72,6 +72,10 @@
     <Compile Include="Read\AdoTableRowReaderCollection.cs" />
     <Compile Include="Check.cs" />
     <Compile Include="Read\Conversion.cs" />
+    <Compile Include="Read\ExportedMemberDescriptor.cs" />
+    <Compile Include="Read\ExpressionHelper.cs" />
+    <Compile Include="Read\IExportedMemberDescriptor.cs" />
+    <Compile Include="Read\PocoColumnSourceFactory.cs" />
     <Compile Include="Write\DataColumnExportAutoConfig.cs" />
     <Compile Include="Read\DataColumnSource.cs" />
     <Compile Include="Read\DataSetAdapter.cs" />

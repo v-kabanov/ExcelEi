@@ -51,7 +51,7 @@ namespace ExcelEi.Read
         ///     Worksheet where table is defined
         /// </param>
         /// <param name="columnNameIndex">
-        ///     Mandatory, maps column names to indexec as understood by <see cref="ExcelWorksheet"/>.
+        ///     Mandatory, maps column names to indexes as understood by <see cref="ExcelWorksheet"/> (indexes are 1-based).
         /// </param>
         public ExcelTableRowReaderCollection(int startRowIndex, int? endRowIndex, ExcelWorksheet excelWorksheet, IDictionary<string, int> columnNameIndex)
         {
