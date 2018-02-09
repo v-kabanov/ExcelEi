@@ -391,18 +391,7 @@ namespace ExcelEi.Test
 
             var readPocos = pocoReader.Read(reader);
 
-            Assert.AreEqual(data1.Count, readPocos.Count);
-
-            for (var i = 0; i < data1.Count; ++i)
-            {
-                var saved = data1[i];
-                var read = readPocos[i];
-                Assert.AreEqual(saved.Id, read.Id);
-                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
-                Assert.AreEqual(saved.FooInt, read.FooInt);
-                Assert.AreEqual(saved.FooFloat, read.FooFloat, 0.00000001D);
-                Assert.AreEqual(saved.FooString, read.FooString);
-            }
+            CheckEquality(data1, readPocos);
 
             workbook.Dispose();
 
@@ -460,24 +449,7 @@ namespace ExcelEi.Test
             var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
             var readPocos = new PocoOneReader().Read(reader);
 
-            Assert.AreEqual(data1.Count, readPocos.Count);
-
-            for (var i = 0; i < data1.Count; ++i)
-            {
-                var saved = data1[i];
-                var read = readPocos[i];
-                Assert.AreEqual(saved.Id, read.Id);
-                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
-                Assert.AreEqual(saved.Values.Length, read.Values.Length);
-
-                for (var j = 0; j < saved.Values.Length; ++j)
-                {
-                    if (saved.Values[j].HasValue)
-                        Assert.AreEqual(saved.Values[j].Value, read.Values[j], 0.0000001D);
-                    else
-                        Assert.IsFalse(read.Values[j].HasValue);
-                }
-            }
+            CheckEquality(data1, readPocos);
 
             workbook.Dispose();
 
@@ -503,7 +475,8 @@ namespace ExcelEi.Test
             configurator
                 .AddInheritedColumn(refId)
                 .AddInheritedColumn(refDateTime)
-                .AddInheritedColumn(refJoinedCollection, "Joined Values");
+                .AddInheritedColumn(refJoinedCollection, "Joined Values")
+                .AddColumn(o => o.IntegerFromPocoThree);
 
             configurator.AddInheritedCollectionColumns(refCollection, 5, "value#{0}");
 
@@ -542,26 +515,9 @@ namespace ExcelEi.Test
             workbook = new ExcelPackage(new FileInfo(outPath));
 
             var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
-            var readPocos = new PocoOneReader().Read(reader);
+            var readPocos = new PocoThreeReader().Read(reader);
 
-            Assert.AreEqual(data1.Count, readPocos.Count);
-
-            for (var i = 0; i < data1.Count; ++i)
-            {
-                var saved = data1[i];
-                var read = readPocos[i];
-                Assert.AreEqual(saved.Id, read.Id);
-                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
-                Assert.AreEqual(saved.Values.Length, read.Values.Length);
-
-                for (var j = 0; j < saved.Values.Length; ++j)
-                {
-                    if (saved.Values[j].HasValue)
-                        Assert.AreEqual(saved.Values[j].Value, read.Values[j], 0.0000001D);
-                    else
-                        Assert.IsFalse(read.Values[j].HasValue);
-                }
-            }
+            CheckEquality(data1, readPocos);
 
             workbook.Dispose();
 
@@ -595,7 +551,6 @@ namespace ExcelEi.Test
 
             dataSetExportConfig.AddSheet(configurator.Config);
 
-
             dataSetExportConfig.AddSheet(new PocoThreeExportConfigurator("TwoSheet").Config);
 
             var dataSet = new DataSetAdapter();
@@ -623,29 +578,163 @@ namespace ExcelEi.Test
             var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
             var readPocos = new PocoThreeReader().Read(reader);
 
-            Assert.AreEqual(data1.Count, readPocos.Count);
-
-            for (var i = 0; i < data1.Count; ++i)
-            {
-                var saved = data1[i];
-                var read = readPocos[i];
-                Assert.AreEqual(saved.Id, read.Id);
-                Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
-                Assert.AreEqual(saved.Values.Length, read.Values.Length);
-
-                for (var j = 0; j < saved.Values.Length; ++j)
-                {
-                    if (saved.Values[j].HasValue)
-                        Assert.AreEqual(saved.Values[j].Value, read.Values[j], 0.0000001D);
-                    else
-                        Assert.IsFalse(read.Values[j].HasValue);
-                }
-            }
+            CheckEquality(data1, readPocos);
 
             workbook.Dispose();
 
             if (_deleteExportedFiles)
                 File.Delete(outPath);
+        }
+
+        [Test]
+        public void SparseColumns()
+        {
+            var outPath = GetNewOutFilePath("-sparse");
+            var workbook = new ExcelPackage(new FileInfo(outPath));
+
+            const string sheetName = "One";
+            var exportConfig = new PocoThreeExportConfigurator(sheetName).Config;
+
+            const int firstColumnIndex = 2;
+            // this is index of the header row
+            const int firstRowIndex = 3;
+
+            exportConfig.LeftSheetColumnIndex = firstColumnIndex;
+            exportConfig.TopSheetRowIndex = firstRowIndex;
+            // no freezing panes
+            exportConfig.FreezeColumnIndex = null;
+
+            // move third column to the right
+            Assert.IsNotEmpty(exportConfig.Columns[2].Caption, "Sheet column#2 has no caption");
+            var movedColumnConfig = exportConfig.GetAutoColumnConfig(exportConfig.Columns[2].Caption);
+            Assert.IsNotNull(movedColumnConfig, "Failed to find column export config by caption");
+            movedColumnConfig.Index = exportConfig.Columns.Count + 2;
+            // allow it to grow more at the end of the table
+            movedColumnConfig.MaximumWidth = 300;
+
+            var dataSetExportConfig = new DataSetExportAutoConfig();
+            dataSetExportConfig.AddSheet(exportConfig);
+
+            var pocoList = Enumerable.Range(0, 100)
+                .Select(i => new PocoThree(6))
+                .ToList();
+
+            var dataSet = new DataSetAdapter().Add(pocoList, sheetName);
+
+            var exporter = new DataSetToWorkbookExporter(dataSetExportConfig) {DataSet = dataSet};
+            exporter.Export(workbook);
+
+            workbook.Save();
+            TestContext.WriteLine($"Saved {outPath}.");
+
+            workbook.Dispose();
+
+            workbook = new ExcelPackage(new FileInfo(outPath));
+
+            var columnReadingMap = exportConfig.Columns
+                .Select(c => new KeyValuePair<string, int>(c.Caption, firstColumnIndex + c.Index))
+                .ToList();
+
+            const int startDataRowIndex = firstRowIndex + 1;
+            var reader = new ExcelTableReader(workbook.Workbook.Worksheets[1], startDataRowIndex, null, columnReadingMap);
+            var readPocos = new PocoThreeReader().Read(reader);
+
+            CheckEquality(pocoList, readPocos);
+
+            workbook.Dispose();
+
+            if (_deleteExportedFiles)
+                File.Delete(outPath);
+        }
+
+        [Test]
+        public void ExplicitColumnIndex()
+        {
+            var configurator = new PocoExportConfigurator<PocoOne>("dd");
+
+            var sheetColumnIndex = 23;
+
+            var columnConfig = configurator.AddColumnCompiled(o => o.DateTime, sheetColumnIndex, "df", false, "format");
+
+            Assert.IsNotNull(columnConfig);
+            Assert.AreEqual(sheetColumnIndex, columnConfig.Index);
+            Assert.AreEqual("df", columnConfig.Caption);
+            Assert.AreEqual(false, columnConfig.AutoFit);
+            Assert.AreEqual("format", columnConfig.Format);
+
+            Assert.Throws<ArgumentException>(() => configurator.AddColumnCompiled(o => o.Id, sheetColumnIndex, "df", false, "format"));
+
+            configurator.AddColumn(o => o.Id, 25, "Id", false, "format");
+            columnConfig = configurator.Config.GetAutoColumnConfig("Id");
+            Assert.IsNotNull(columnConfig);
+            Assert.AreEqual(25, columnConfig.Index);
+            Assert.AreEqual("Id", columnConfig.Caption);
+            Assert.AreEqual(false, columnConfig.AutoFit);
+            Assert.AreEqual("format", columnConfig.Format);
+        }
+
+        private void CheckEquality(IList<PocoOne> savedList, IList<PocoOne> readList)
+        {
+            Assert.AreEqual(savedList.Count, readList.Count, "Count mismatch");
+
+            for (var i = 0; i < savedList.Count; ++i)
+                CheckEquality(savedList[i], readList[i]);
+        }
+
+        private void CheckEquality(IList<PocoThree> savedList, IList<PocoThree> readList)
+        {
+            Assert.AreEqual(savedList.Count, readList.Count, "Count mismatch");
+
+            for (var i = 0; i < savedList.Count; ++i)
+                CheckEquality(savedList[i], readList[i]);
+        }
+
+        private void CheckEquality(IList<PocoTwo> savedList, IList<PocoTwo> readList)
+        {
+            Assert.AreEqual(savedList.Count, readList.Count, "Count mismatch");
+
+            for (var i = 0; i < savedList.Count; ++i)
+                CheckEquality(savedList[i], readList[i]);
+        }
+
+        private void CheckEquality(PocoThree saved, PocoThree read)
+        {
+            CheckEquality((PocoOne)saved, read);
+
+            Assert.AreEqual(saved.IntegerFromPocoThree, read.IntegerFromPocoThree);
+        }
+
+        private void CheckEquality(PocoOne saved, PocoOne read)
+        {
+            CheckEquality((PocoBase)saved, read);
+
+            Assert.AreEqual(saved.Id, read.Id);
+            Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
+
+            Assert.AreEqual(saved.Values.Length, read.Values.Length);
+
+            for (var j = 0; j < saved.Values.Length; ++j)
+            {
+                if (saved.Values[j].HasValue)
+                    Assert.AreEqual(saved.Values[j].Value, read.Values[j], 0.0000001D);
+                else
+                    Assert.IsFalse(read.Values[j].HasValue);
+            }
+        }
+
+        private void CheckEquality(PocoTwo saved, PocoTwo read)
+        {
+            CheckEquality((PocoBase)saved, read);
+
+            Assert.AreEqual(saved.FooInt, read.FooInt);
+            Assert.AreEqual(saved.FooFloat, read.FooFloat, 0.00000001D);
+            Assert.AreEqual(saved.FooString, read.FooString);
+        }
+
+        private void CheckEquality(PocoBase saved, PocoBase read)
+        {
+            Assert.AreEqual(saved.Id, read.Id);
+            Assert.Less((saved.DateTime - read.DateTime).TotalMilliseconds, 1);
         }
     }
 }

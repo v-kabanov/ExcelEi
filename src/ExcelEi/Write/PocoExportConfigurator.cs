@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -107,9 +106,9 @@ namespace ExcelEi.Write
         /// <returns>
         ///     New column configuration (can be further customized).
         /// </returns>
-        public DataColumnExportAutoConfig AddColumn<TV>(Func<TE, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
+        public DataColumnExportAutoConfig AddColumnCompiled<TV>(Func<TE, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
         {
-            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            return AddColumnCompiledPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -144,13 +143,13 @@ namespace ExcelEi.Write
         ///     There should be really reverse type constraint 'TE: TA', TA should be base class for TE, but
         ///     I cannot find a way to express it.
         /// </remarks>
-        public DataColumnExportAutoConfig AddInheritedColumn<TA, TV>(
+        public DataColumnExportAutoConfig AddInheritedColumnCompiled<TA, TV>(
             Func<TA, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
             where TA: class
         {
             Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
 
-            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            return AddColumnCompiledPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -192,7 +191,7 @@ namespace ExcelEi.Write
             Func<TA, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
             where TA: class, TE
         {
-            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+            return AddColumnCompiledPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -223,7 +222,7 @@ namespace ExcelEi.Write
         /// <returns>
         ///     New column configuration (can be further customized).
         /// </returns>
-        public DataColumnExportAutoConfig AddColumnPolymorphic<TA, TV>(
+        public DataColumnExportAutoConfig AddColumnCompiledPolymorphic<TA, TV>(
             Func<TA, TV> valueGetter, int sheetColumnIndex, string sheetColumnCaption, bool? autoFit, string format)
             where TA: class
         {
@@ -267,6 +266,41 @@ namespace ExcelEi.Write
         }
 
         /// <summary>
+        ///     Add column getting values from property or field of non-collection type by reflection.
+        ///     If actual POCO instance is not of <see cref="PocoType"/> type, <see cref="TargetException"/> will be thrown during export.
+        ///     This is different from the behavior of methods accepting expressions because expressions can potentially handle null argument.
+        /// </summary>
+        /// <typeparam name="TV">
+        ///     Source data type - type to which member identified by <see cref="memberName"/> will be cast.
+        ///     Specify <see cref="object"/> to let it (<see cref="PocoColumnSource{TA,TV}.DataType"/>) be figured out via reflection;
+        ///     actual value will not be cast during export.
+        /// </typeparam>
+        /// <param name="memberName">
+        ///     Field or property name; must be of primitive type, not a colection.
+        /// </param>
+        /// <param name="sheetColumnIndex">
+        ///     0-based sheet column index relative to left most column to which export is performed
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        public PocoExportConfigurator<TE> AddColumn<TV>(
+            string memberName, int sheetColumnIndex
+            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+        {
+            return AddDescendantsColumn<TE, TV>(memberName, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
         ///     Add column getting values from a non-collection member of <see cref="PocoType"/>'s descendant type by reflection.
         ///     If actual POCO instance is not of the descendant type, <see cref="TargetException"/> will be thrown during export.
         ///     This is different from the behavior of methods accepting expressions because expressions can potentially handle null argument.
@@ -297,11 +331,50 @@ namespace ExcelEi.Write
         public PocoExportConfigurator<TE> AddDescendantsColumn<TA, TV>(string memberName, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
             where TA: class, TE
         {
+            return AddDescendantsColumn<TA, TV>(memberName, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Add column getting values from a non-collection member of <see cref="PocoType"/>'s descendant type by reflection.
+        ///     If actual POCO instance is not of the descendant type, <see cref="TargetException"/> will be thrown during export.
+        ///     This is different from the behavior of methods accepting expressions because expressions can potentially handle null argument.
+        /// </summary>
+        /// <typeparam name="TA">
+        ///     Descendant type containing <paramref name="memberName"/>.
+        /// </typeparam>
+        /// <typeparam name="TV">
+        ///     Source data type - type to which member identified by <see cref="memberName"/> will be cast.
+        ///     Specify <see cref="object"/> to let it (<see cref="PocoColumnSource{TA,TV}.DataType"/>) be figured out via reflection;
+        ///     actual value will not be cast during export.
+        /// </typeparam>
+        /// <param name="memberName">
+        ///     Field or property name; must be of primitive type, not a colection.
+        /// </param>
+        /// <param name="sheetColumnIndex">
+        ///     0-based sheet column index relative to left most column to which export is performed
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        public PocoExportConfigurator<TE> AddDescendantsColumn<TA, TV>(
+            string memberName, int sheetColumnIndex
+            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+            where TA: class, TE
+        {
             Check.DoRequireArgumentNotNull(memberName, nameof(memberName));
 
             var columnSource = PocoColumnSourceFactory.CreateReflection<TV>(typeof(TA), memberName);
 
-            AddColumn(columnSource, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+            AddColumn(columnSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
 
             return this;
         }
@@ -327,6 +400,34 @@ namespace ExcelEi.Write
         public PocoExportConfigurator<TE> AddColumn<TV>(Expression<Func<TE, TV>> valueGetter, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
         {
             return AddInheritedColumn(valueGetter, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Add column getting values from property of non-collection type by lambda expression which
+        ///     is compiled and cached.
+        /// </summary>
+        /// <param name="valueGetter">
+        ///     Mandatory, reference returning property (value conversions do not prevent member resolution) or field or arbitrary value.
+        ///     In the latter case <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
+        ///     for identification. The expression is compiled, cached and used for retrieving values for the column.
+        /// </param>
+        /// <param name="sheetColumnIndex">
+        ///     0-based sheet column index relative to left most column to which export is performed
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Whether to fit column width to content after export.
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        public PocoExportConfigurator<TE> AddColumn<TV>(
+            Expression<Func<TE, TV>> valueGetter, int sheetColumnIndex
+            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+        {
+            return AddInheritedColumn(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
         }
 
         /// <summary>
@@ -364,12 +465,57 @@ namespace ExcelEi.Write
         public PocoExportConfigurator<TE> AddInheritedColumn<TA, TV>(Expression<Func<TA, TV>> valueGetter, string sheetColumnCaption = null, bool? autoFit = null, string format = null)
             where   TA: class
         {
+            return AddInheritedColumn(valueGetter, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Add column getting values from property of non-collection type by lambda expression which
+        ///     is compiled and cached. The expression can accept <see cref="PocoType"/>'s base class instance; in this
+        ///     case type safety will be checked at runtime during configuration as it cannot be enforced at compile time.
+        /// </summary>
+        /// <typeparam name="TA">
+        ///     Instance type accepted by <paramref name="valueGetter"/>; same as <typeparamref name="TE"/> or its base class
+        /// </typeparam>
+        /// <typeparam name="TV">
+        ///     Source data type - type returned by <paramref name="valueGetter"/>.
+        /// </typeparam>
+        /// <param name="valueGetter">
+        ///     Mandatory, reference returning property (value conversions do not prevent member resolution) or field or arbitrary value.
+        ///     In the latter case <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
+        ///     for identification. The expression is compiled, cached and used for retrieving values for the column.
+        /// </param>
+        /// <param name="sheetColumnIndex">
+        ///     0-based sheet column index relative to left most column to which export is performed
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        /// <remarks>
+        ///     There should be really reverse type constraint 'TE: TA', TA should be base class for TE, but
+        ///     I cannot find a way to express it.
+        /// </remarks>
+        public PocoExportConfigurator<TE> AddInheritedColumn<TA, TV>(
+            Expression<Func<TA, TV>> valueGetter, int sheetColumnIndex
+            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+            where   TA: class
+        {
             Check.DoRequireArgumentNotNull(valueGetter, nameof(valueGetter));
             Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType), () => $"{PocoType.Name} does not inherit from {typeof(TA).Name}");
 
             var columnSource = PocoColumnSourceFactory.Create(valueGetter, sheetColumnCaption);
 
-            return AddColumn(columnSource, sheetColumnCaption, autoFit, format);
+            AddColumn(columnSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+
+            return this;
         }
 
         /// <summary>
@@ -427,6 +573,50 @@ namespace ExcelEi.Write
         ///     Source data type - type returned by <paramref name="valueGetter"/>.
         /// </typeparam>
         /// <param name="valueGetter">
+        ///     Mandatory, reference returning property (value conversions do not prevent member resolution) or field or arbitrary value.
+        ///     In the latter case <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
+        ///     for identification. The expression is compiled, cached and used for retrieving values for the column.
+        /// </param>
+        /// <param name="sheetColumnIndex">
+        ///     0-based sheet column index relative to left most column to which export is performed
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        /// <remarks>
+        ///     This method encapsulates generic type constraint.
+        /// </remarks>
+        public PocoExportConfigurator<TE> AddDescendantsColumn<TA, TV>(
+            Expression<Func<TA, TV>> valueGetter, int sheetColumnIndex
+            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+            where   TA: class, TE
+        {
+            return AddColumnPolymorphic(valueGetter, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Add column getting values from property of non-collection type by lambda expression which
+        ///     is compiled and cached. The expression can accept <see cref="PocoType"/>'s descendant class instance
+        ///     which is checked at compile time; however, whether exported collection item is actually of the descendant type
+        ///     will only be checked at runtime during export (rather than configuration). If it cannot be cast to <typeparamref name="TA"/>,
+        ///     null will be passed to the <paramref name="valueGetter"/> by <see cref="PocoColumnSource{TA,TV}"/>.
+        /// </summary>
+        /// <typeparam name="TA">
+        ///     Instance type accepted by <paramref name="valueGetter"/>; must be same as <typeparamref name="TE"/> or its descendant.
+        /// </typeparam>
+        /// <typeparam name="TV">
+        ///     Source data type - type returned by <paramref name="valueGetter"/>.
+        /// </typeparam>
+        /// <param name="valueGetter">
         ///     Mandatory, reference returning property or field or arbitrary value. In the latter case
         ///     <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
         ///     for identification. The expression is compiled, cached and used for retrieving values for the column.
@@ -448,13 +638,56 @@ namespace ExcelEi.Write
             , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
             where   TA: class
         {
+            return AddColumnPolymorphic(valueGetter, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+        }
+
+        /// <summary>
+        ///     Add column getting values from property of non-collection type by lambda expression which
+        ///     is compiled and cached. The expression can accept <see cref="PocoType"/>'s descendant class instance
+        ///     which is checked at compile time; however, whether exported collection item is actually of the descendant type
+        ///     will only be checked at runtime during export (rather than configuration). If it cannot be cast to <typeparamref name="TA"/>,
+        ///     null will be passed to the <paramref name="valueGetter"/> by <see cref="PocoColumnSource{TA,TV}"/>.
+        /// </summary>
+        /// <typeparam name="TA">
+        ///     Instance type accepted by <paramref name="valueGetter"/>; must be same as <typeparamref name="TE"/> or its descendant.
+        /// </typeparam>
+        /// <typeparam name="TV">
+        ///     Source data type - type returned by <paramref name="valueGetter"/>.
+        /// </typeparam>
+        /// <param name="valueGetter">
+        ///     Mandatory, reference returning property or field or arbitrary value. In the latter case
+        ///     <paramref name="sheetColumnCaption"/> should be specified and it will be used as source column name
+        ///     for identification. The expression is compiled, cached and used for retrieving values for the column.
+        /// </param>
+        /// <param name="sheetColumnIndex">
+        ///     0-based sheet column index relative to left most column to which export is performed
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     Itself
+        /// </returns>
+        public PocoExportConfigurator<TE> AddColumnPolymorphic<TA, TV>(
+            Expression<Func<TA, TV>> valueGetter, int sheetColumnIndex
+            , string sheetColumnCaption = null, bool? autoFit = null, string format = null)
+            where   TA: class
+        {
             Check.DoRequireArgumentNotNull(valueGetter, nameof(valueGetter));
             Check.DoCheckArgument(typeof(TA).IsAssignableFrom(PocoType) || PocoType.IsAssignableFrom(typeof(TA))
                 , () => $"{PocoType.Name} cannot be cast to {typeof(TA).Name}");
 
             var columnSource = PocoColumnSourceFactory.Create(valueGetter, sheetColumnCaption);
 
-            return AddColumn(columnSource, sheetColumnCaption, autoFit, format);
+            AddColumn(columnSource, sheetColumnIndex, sheetColumnCaption, autoFit, format);
+
+            return this;
         }
 
         /// <summary>
@@ -525,7 +758,7 @@ namespace ExcelEi.Write
             else
             {
                 var fieldInfo = (FieldInfo)memberInfo;
-                Debug.Assert(fieldInfo != null, nameof(fieldInfo) + " != null");
+                // ReSharper disable once PossibleNullReferenceException
                 collectionType = fieldInfo.FieldType;
                 collectionExtractor = e => (IList<TV>)fieldInfo.GetValue(e);
             }
@@ -729,10 +962,8 @@ namespace ExcelEi.Write
                                   , "If collection expression does not refer to property or field, column caption format must be provided");
 
             if (string.IsNullOrWhiteSpace(sheetColumnCaptionFormat))
-            {
-                Debug.Assert(memberInfo != null, nameof(memberInfo) + " != null");
+                // ReSharper disable once PossibleNullReferenceException
                 sheetColumnCaptionFormat = $"{memberInfo.Name}[{{0}}]";
-            }
 
             var memberName = memberInfo?.Name ?? collectionMemberGetter.ToString();
 
@@ -747,7 +978,7 @@ namespace ExcelEi.Write
             else
             {
                 var fieldInfo = (FieldInfo)memberInfo;
-                Debug.Assert(fieldInfo != null, nameof(fieldInfo) + " != null");
+                // ReSharper disable once PossibleNullReferenceException
                 collectionType = fieldInfo.FieldType;
             }
 
