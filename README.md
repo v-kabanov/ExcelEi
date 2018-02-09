@@ -101,3 +101,102 @@ POCO readers can convert column values:
     }
 
 ```
+
+Easy export from ADO.NET:
+```C#
+
+    var dataSet = new DataSet();
+    // ...
+    var config = new DataSetExportAutoConfig(dataSet);
+
+    var exporter = new DataSetToWorkbookExporter(config) {DataSet = new DataSetAdapter(dataSet)};
+
+    using(var package = new ExcelPackage(new FileInfo("c:\\output.xlsx")))
+    {
+        exporter.Export(package);
+        package.Save();
+    }
+```
+
+Supports reflection for difficult situations:
+```C#
+    configurator.AddColumn<int?>(nameof(PocoTwo.FieldInt), "Reflected Field");
+```
+
+Mappings for base classes can be encapsulated and reused with generics and inheritance (see wiki for more details).
+Export:
+```C#
+    public class PocoBaseExportConfigurator<T> : PocoExportConfigurator<T>
+        where T: PocoBase
+    {
+        public PocoBaseExportConfigurator(string sheetName, string dataTableName)
+            : base(sheetName, dataTableName)
+        {
+            AddColumn(o => o.Id);
+            AddColumn(o => o.DateTime);
+        }
+    }
+
+    public class PocoOneExportBaseConfigurator<T> : PocoBaseExportConfigurator<T>
+        where T: PocoOne
+    {
+        public PocoOneExportBaseConfigurator(string sheetName, string dataTableName)
+            : base(sheetName, dataTableName)
+        {
+            AddColumn(o => o.Values != null ? string.Join(",", o.Values.Select(e => e.ToString())) : null, "Joined Values");
+            AddCollectionColumns(o => o.Values, 5, "value#{0}");
+        }
+    }
+```
+Import:
+```C#
+    public class PocoOneBaseReader<T> : TableMappingReader<T>
+        where T: PocoOne
+    {
+        public PocoOneBaseReader()
+        {
+            Map(o => o.Id);
+            Map(o => o.DateTime);
+        }
+    }
+
+    public class PocoTwoReader : PocoOneBaseReader<PocoTwo>
+    {
+        public PocoTwoReader()
+        {
+            Map(o => o.IntegerFromPocoTwo);
+        }
+    }
+```
+
+Supports sparse columns and custom placement (see also corresponding test):
+```C#
+    var exportConfig = new PocoThreeExportConfigurator(sheetName).Config;
+
+    const int firstColumnIndex = 2;
+    // this is index of the header row
+    const int firstRowIndex = 3;
+
+    exportConfig.LeftSheetColumnIndex = firstColumnIndex;
+    exportConfig.TopSheetRowIndex = firstRowIndex;
+    // no freezing panes
+    exportConfig.FreezeColumnIndex = null;
+
+    // move third column to the right
+    Assert.IsNotEmpty(exportConfig.Columns[2].Caption, "Sheet column#2 has no caption");
+    var movedColumnConfig = exportConfig.GetAutoColumnConfig(exportConfig.Columns[2].Caption);
+    Assert.IsNotNull(movedColumnConfig, "Failed to find column export config by caption");
+    movedColumnConfig.Index = exportConfig.Columns.Count + 2;
+    // allow it to grow more at the end of the table
+    movedColumnConfig.MaximumWidth = 300;
+
+    // ...
+    var columnReadingMap = exportConfig.Columns
+        .Select(c => new KeyValuePair<string, int>(c.Caption, firstColumnIndex + c.Index))
+        .ToList();
+
+    const int startDataRowIndex = firstRowIndex + 1;
+    var reader = new ExcelTableReader(workbook.Workbook.Worksheets[1], startDataRowIndex, null, columnReadingMap);
+    var readPocos = new PocoThreeReader().Read(reader);
+
+```
