@@ -96,7 +96,7 @@ namespace ExcelEi.Write
         public DataTableExportAutoConfig AddColumn(IColumnExportConfig columnConfig)
         {
             Check.DoRequireArgumentNotNull(columnConfig, "columnConfig");
-            Check.DoCheckOperationValid(GetColumnBySheetIndex(columnConfig.Index) == null, "The sheet column population is already configured");
+            Check.DoCheckArgument(GetColumnBySheetIndex(columnConfig.Index) == null, "The sheet column population is already configured");
 
             _columns.Add(columnConfig);
             return this;
