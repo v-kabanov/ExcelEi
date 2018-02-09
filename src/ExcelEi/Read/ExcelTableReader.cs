@@ -42,20 +42,20 @@ namespace ExcelEi.Read
         /// </summary>
         /// <param name="worksheet"></param>
         /// <param name="startRowIndex">
-        ///     1-based index (1..1048576), inclusive
+        ///     1-based index (1..1048576) of the row containing data (not header), inclusive
         /// </param>
         /// <param name="endRowIndex">
         ///     Optional 1-based index (1..1048577), exclusive to allow reading empty table
         /// </param>
         /// <param name="columns">
-        ///     List of columns in original order
+        ///     Pairs of name and 1-based index.
         /// </param>
         public ExcelTableReader(ExcelWorksheet worksheet, int startRowIndex, int? endRowIndex, IList<KeyValuePair<string, int>> columns)
         {
             Check.DoRequireArgumentNotNull(worksheet, nameof(worksheet));
             Check.DoRequireArgumentNotNull(columns, nameof(columns));
 
-            _columnNames = columns.Select(p => p.Key).ToList();
+            _columnNames = columns.OrderBy(p => p.Value).Select(p => p.Key).ToList();
             var columnNameIndex = columns.ToDictionary(p => p.Key, p => p.Value);
 
             Rows = new ExcelTableRowReaderCollection(startRowIndex, endRowIndex, worksheet, columnNameIndex);

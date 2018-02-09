@@ -60,7 +60,7 @@ namespace ExcelEi.Read
             Check.DoRequireArgumentNotNull(dataTable, nameof(dataTable));
             Check.DoRequireArgumentNotNull(columns, nameof(columns));
 
-            _columnNames = columns.Select(p => p.Key).ToList();
+            _columnNames = columns.OrderBy(p => p.Value).Select(p => p.Key).ToList();
             var columnNameIndex = columns.ToDictionary(p => p.Key, p => p.Value);
 
             Rows = new AdoTableRowReaderCollection(startRowIndex, endRowIndex, dataTable, columnNameIndex);
