@@ -23,6 +23,8 @@ namespace ExcelEi.Write
             SheetTables = new ReadOnlyCollection<ISheetExportConfig>(_tables);
         }
 
+#if !NOADONET
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="DataSetExportAutoConfig"/> class.
         /// </summary>
@@ -64,6 +66,7 @@ namespace ExcelEi.Write
             Check.DoRequireArgumentNotNull(dataTable, "dataTable");
             _tables.Add(new DataTableExportAutoConfig(dataTable));
         }
+#endif
 
         /// <summary>
         ///     Initializes new instance with single provided table/sheet export config.

@@ -222,6 +222,8 @@ namespace ExcelEi.Test
 
         private bool _deleteExportedFiles = true;
 
+#if !NOADONET
+
         [Test]
         public void OneTable()
         {
@@ -318,6 +320,7 @@ namespace ExcelEi.Test
             if (_deleteExportedFiles)
                 File.Delete(outPath);
         }
+#endif
 
         [Test]
         public void SimplePoco()

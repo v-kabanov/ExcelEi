@@ -22,6 +22,8 @@ namespace ExcelEi.Write
 
         private readonly List<IColumnExportConfig> _columns = new List<IColumnExportConfig>();
 
+#if !NOADONET
+
         /// <summary>
         ///     Creates default configuration from existing ADO.NET <see cref="DataTable"/>.
         /// </summary>
@@ -36,6 +38,7 @@ namespace ExcelEi.Write
                 AddColumn(new DataColumnExportAutoConfig(this, column));
             }
         }
+#endif
 
         /// <summary>
         ///     Initialize new instance with defaults and empty columns collection.

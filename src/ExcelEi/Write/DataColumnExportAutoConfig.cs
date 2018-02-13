@@ -6,7 +6,9 @@
 
 using System;
 using System.Data;
+#if !NOADONET
 using System.Data.SqlTypes;
+#endif
 using System.Drawing;
 using ExcelEi.Read;
 
@@ -18,6 +20,8 @@ namespace ExcelEi.Write
     public class DataColumnExportAutoConfig : IColumnExportConfig
     {
         public const string DefaultDateTimeFormat = "dd-MMM-yyyy hh:mm:ss AM/PM";
+
+#if !NOADONET
 
         /// <param name="sheet">
         ///     Mandatory, containing sheet export configuration
@@ -63,6 +67,7 @@ namespace ExcelEi.Write
             : this(sheet, sheetColumnIndex, caption, new DataColumnSource(column))
         {
         }
+#endif
 
         /// <summary>
         ///     Lower-level initializer which can work with any data item type.
@@ -186,7 +191,11 @@ namespace ExcelEi.Write
         {
             type = Nullable.GetUnderlyingType(type) ?? type;
 
-            return typeof(SqlDateTime).IsAssignableFrom(type) || typeof(DateTime).IsAssignableFrom(type);
+            return
+#if !NOADONET
+                typeof(SqlDateTime).IsAssignableFrom(type) ||
+#endif
+                typeof(DateTime).IsAssignableFrom(type);
         }
 
         private bool IsPrimitive(Type type)
