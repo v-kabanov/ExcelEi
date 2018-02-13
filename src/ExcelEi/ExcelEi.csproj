@@ -48,15 +48,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+    <PackageReference Include="EPPlus" Version="4.1.1" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
+    <PackageReference Include="EPPlus" Version="4.1.1" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <PackageReference Include="System.Runtime.Serialization.Formatters" Version="4.3.0" />
+    <PackageReference Include="EPPlus.Core" Version="1.5.4" />
 
     <Compile Remove="Read\Ado*.cs" />
     <Compile Remove="Read\DataSetAdapter.cs" />
@@ -69,11 +72,11 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
+    <PackageReference Include="EPPlus.Core" Version="1.5.4" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="6.2.2" />
-    <PackageReference Include="EPPlus.Core" Version="1.5.4" />
     <PackageReference Include="ExcelDataReader" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.8" />
   </ItemGroup>
@@ -87,10 +90,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.0.2</Version>
-    <FileVersion>1.0.2</FileVersion>
+    <Version>1.0.3</Version>
+    <FileVersion>1.0.3</FileVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
     <Authors>Vasily Kabanov</Authors>
-    <Description>A library for Excel export/import.</Description>
+    <Description>A library for Excel export/import. Builds on top of EPPlus (Or EPPlus.Core), ExcelDataReader and AutoMapper, adding POCO mapping. The development goal is loose coupling between data mapping, formatting and data itself, code brevity and type safety.</Description>
     <Copyright>Copyright (c) 2018 Vasily Kabanov</Copyright>
   </PropertyGroup>
 
@@ -98,7 +102,7 @@
     <PackageId>ExcelEi</PackageId>
     <PackageVersion>1.0.3</PackageVersion>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageReleaseNotes>Support .NET Standard 2.0 through EPPlus.Core.</PackageReleaseNotes>
     <PackageTags>excel import export OpenXML epplus</PackageTags>
     <PackageLicenseUrl>http://unlicense.org</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/v-kabanov/ExcelEi</PackageProjectUrl>
