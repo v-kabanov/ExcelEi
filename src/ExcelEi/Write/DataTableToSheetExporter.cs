@@ -8,7 +8,9 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using ExcelEi.Read;
+#if !DISABLE_LOG4NET
 using log4net;
+#endif
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -21,7 +23,9 @@ namespace ExcelEi.Write
     {
         public const int MaxExcelSheetRowCount = ExcelPackage.MaxRows;
 
+#if !DISABLE_LOG4NET
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+#endif
 
         private int _currentSheetRowIndex;
 
@@ -62,8 +66,9 @@ namespace ExcelEi.Write
 
         public void Export()
         {
+#if !DISABLE_LOG4NET
             Log.DebugFormat("Exporting {0}", SheetExportConfig.SheetName);
-
+#endif
             _currentSheetRowIndex = SheetExportConfig.TopSheetRowIndex;
 
             SetUpSheet();
@@ -113,7 +118,9 @@ namespace ExcelEi.Write
                 ++_currentSheetRowIndex;
                 if (_currentSheetRowIndex >= (MaxExcelSheetRowCount - 5))
                 {
+#if !DISABLE_LOG4NET
                     Log.WarnFormat("Stopping export at row {0} so that not to exceed excel limit", dataRowNumber);
+#endif
                     break;
                 }
             }
@@ -129,7 +136,9 @@ namespace ExcelEi.Write
 
             FormatAfterDataExport();
 
+#if !DISABLE_LOG4NET
             Log.DebugFormat("Finished");
+#endif
         }
 
         private void FormatCell(ExcelStyle excelStyle, Color? backgroundColor, Color? fontColor, IColumnExportConfig columnConfig)

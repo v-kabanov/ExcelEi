@@ -82,11 +82,11 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netstandard1.3'">
-    <DefineConstants>FEATURE_TYPE_INFO,NOADONET</DefineConstants>
+    <DefineConstants>NOADONET</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <DefineConstants>FEATURE_TYPE_INFO</DefineConstants>
+    <DefineConstants>DISABLE_LOG4NET</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
