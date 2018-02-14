@@ -1,7 +1,8 @@
 # ExcelEi
 Library for excel export-import
 
-It builds on top of EPPlus, ExcelDataReader and AutoMapper.
+It builds on top of EPPlus (EPPlus.Core for .NET Standard/Core 2.0), ExcelDataReader and AutoMapper.
+Supported frameworks: .NET Framework 4.5, 4.6; .NET Standard 2.0.
 
 Import example:
 ```C#
@@ -183,9 +184,7 @@ Supports sparse columns and custom placement (see also corresponding test):
     exportConfig.FreezeColumnIndex = null;
 
     // move third column to the right
-    Assert.IsNotEmpty(exportConfig.Columns[2].Caption, "Sheet column#2 has no caption");
     var movedColumnConfig = exportConfig.GetAutoColumnConfig(exportConfig.Columns[2].Caption);
-    Assert.IsNotNull(movedColumnConfig, "Failed to find column export config by caption");
     movedColumnConfig.Index = exportConfig.Columns.Count + 2;
     // allow it to grow more at the end of the table
     movedColumnConfig.MaximumWidth = 300;
