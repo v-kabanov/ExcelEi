@@ -1,6 +1,14 @@
 @echo off
 
-echo Using %nuget%
+if not defined PACKOUT (
+    set PACKOUT=%~dp0NuGet
+)
 
-rmdir /S /Q "%~dp0NuGet"
-%nuget% pack "%~dp0src\ExcelEi" -Symbols -Properties Configuration=Release -OutputDirectory "%~dp0NuGet"
+if not exist "%PACKOUT%" (
+    echo Creating "%PACKOUT%"
+    mkdir "%PACKOUT%"
+)
+
+echo Packing into %PACKOUT%
+
+dotnet pack "%~dp0src\ExcelEi\ExcelEi.csproj" -c Release --include-symbols --include-source -o "%PACKOUT%"
