@@ -146,7 +146,7 @@ namespace ExcelEi
         }
     }
 
-    public class DesignByContractException : ApplicationException
+    public class DesignByContractException : Exception
     {
         protected DesignByContractException()
         {

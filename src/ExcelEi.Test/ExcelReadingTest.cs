@@ -75,6 +75,9 @@ namespace ExcelEi.Test
             TestFilePath = Path.Combine(testDirectory, TestFileRelativePath);
             TestFileWithTablesPath = Path.Combine(testDirectory, TestFileWithTablesRelativePath);
             XlsTestFilePath = Path.Combine(testDirectory, XlsTestFileRelativePath);
+
+            foreach (var path in new [] {TestFilePath, TestFileWithTablesPath, XlsTestFilePath} )
+                Assert.IsTrue(File.Exists(path));
         }
 
 
