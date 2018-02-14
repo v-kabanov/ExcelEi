@@ -100,7 +100,7 @@
 
   <PropertyGroup>
     <PackageId>ExcelEi</PackageId>
-    <PackageVersion>1.0.3</PackageVersion>
+    <PackageVersion>1.0.3-rc</PackageVersion>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>Support .NET Standard 2.0 through EPPlus.Core.</PackageReleaseNotes>
     <PackageTags>excel import export OpenXML epplus</PackageTags>
