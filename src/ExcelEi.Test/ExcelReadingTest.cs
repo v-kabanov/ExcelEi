@@ -126,6 +126,7 @@ namespace ExcelEi.Test
 
             using (var package = new ExcelPackage(new FileInfo(TestFilePath)))
             {
+                package.Compatibility.IsWorksheets1Based = true;
                 var workbook = package.Workbook;
                 var epplusReader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Worksheets[1], 17);
                 //Trace(reader);
@@ -174,6 +175,7 @@ namespace ExcelEi.Test
 
             using (var package = new ExcelPackage(new FileInfo(TestFilePath)))
             {
+                package.Compatibility.IsWorksheets1Based = true;
                 var workbook = package.Workbook;
                 var reader = ExcelTableReader.ReadArbitraryTable(workbook.Worksheets[1], 7, 16, columns);
                 //Trace(reader);
