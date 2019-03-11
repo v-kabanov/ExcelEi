@@ -381,7 +381,7 @@ namespace ExcelEi.Test
 
             workbook = new ExcelPackage(new FileInfo(outPath));
 
-            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets["OneSheet"], 1);
 
             var pocoReader = new TableMappingReader<PocoTwo>();
             pocoReader
@@ -449,7 +449,7 @@ namespace ExcelEi.Test
 
             workbook = new ExcelPackage(new FileInfo(outPath));
 
-            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets["OneSheet"], 1);
             var readPocos = new PocoOneReader().Read(reader);
 
             CheckEquality(data1, readPocos);
@@ -517,7 +517,7 @@ namespace ExcelEi.Test
 
             workbook = new ExcelPackage(new FileInfo(outPath));
 
-            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets["OneSheet"], 1);
             var readPocos = new PocoThreeReader().Read(reader);
 
             CheckEquality(data1, readPocos);
@@ -578,7 +578,7 @@ namespace ExcelEi.Test
 
             workbook = new ExcelPackage(new FileInfo(outPath));
 
-            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets[1], 1);
+            var reader = ExcelTableReader.ReadContiguousTableWithHeader(workbook.Workbook.Worksheets["OneSheet"], 1);
             var readPocos = new PocoThreeReader().Read(reader);
 
             CheckEquality(data1, readPocos);
@@ -639,7 +639,7 @@ namespace ExcelEi.Test
                 .ToList();
 
             const int startDataRowIndex = firstRowIndex + 1;
-            var reader = new ExcelTableReader(workbook.Workbook.Worksheets[1], startDataRowIndex, null, columnReadingMap);
+            var reader = new ExcelTableReader(workbook.Workbook.Worksheets["One"], startDataRowIndex, null, columnReadingMap);
             var readPocos = new PocoThreeReader().Read(reader);
 
             CheckEquality(pocoList, readPocos);

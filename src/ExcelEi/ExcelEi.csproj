@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net45' OR '$(TargetFramework)'=='net46'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net461'">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -15,94 +15,48 @@
     <Reference Include="System.Web" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-  
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3'">
-    <PackageReference Include="CoreCompat.System.Drawing" Version="1.0.0-beta006" />
-    <PackageReference Include="System.Collections.NonGeneric" Version="4.3.0" />
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Reflection" Version="4.3.0" />
-    <PackageReference Include="System.Security.Claims" Version="4.3.0" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="4.3.0" />
-    <PackageReference Include="System.Security.Cryptography.X509Certificates" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    <PackageReference Include="System.Threading.ThreadPool" Version="4.3.0" />
-    <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
-    <PackageReference Include="System.Xml.XPath.XmlDocument" Version="4.3.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.3.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <PackageReference Include="System.Drawing.Common" Version="4.5.0-preview1-25914-04" />
-    <PackageReference Include="System.Collections.NonGeneric" Version="4.3.0" />
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Reflection" Version="4.3.0" />
-    <PackageReference Include="System.Security.Claims" Version="4.3.0" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="4.3.0" />
-    <PackageReference Include="System.Security.Cryptography.X509Certificates" Version="4.3.0" />
-    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    <PackageReference Include="System.Threading.ThreadPool" Version="4.3.0" />
-    <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
-    <PackageReference Include="System.Xml.XPath.XmlDocument" Version="4.3.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.4.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
-    <PackageReference Include="EPPlus" Version="4.1.1" />
-    <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-    <PackageReference Include="EPPlus" Version="4.1.1" />
-    <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="4.3.0" />
-    <PackageReference Include="EPPlus.Core" Version="1.5.4" />
-
-    <Compile Remove="Read\Ado*.cs" />
-    <Compile Remove="Read\DataSetAdapter.cs" />
-    <Compile Remove="Read\DataTableSource.cs" />
-    <Compile Remove="Read\DataSetExtractor.cs" />
-    <Compile Remove="Read\DataColumnSource.cs" />
-    <Compile Remove="Write\DataTableExportConfigurator.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
-    <PackageReference Include="EPPlus.Core" Version="1.5.4" />
-  </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="6.2.2" />
+    <PackageReference Include="AutoMapper.Extensions.ExpressionMapping" Version="2.0.0" />
+    <PackageReference Include="EPPlus" Version="4.5.3" />
+    <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
+    <PackageReference Include="AutoMapper" Version="8.0.0" />
     <PackageReference Include="ExcelDataReader" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.8" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard1.3'">
-    <DefineConstants>NOADONET</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <DefineConstants>DISABLE_LOG4NET</DefineConstants>
-  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+    <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
+    <PackageReference Include="System.Collections.NonGeneric" Version="4.3.0" />
+    <PackageReference Include="System.Data.Common" Version="4.3.0" />
+    <PackageReference Include="System.Reflection" Version="4.3.0" />
+    <PackageReference Include="System.Security.Claims" Version="4.3.0" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="4.5.1" />
+    <PackageReference Include="System.Security.Cryptography.X509Certificates" Version="4.3.2" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+    <PackageReference Include="System.Threading.ThreadPool" Version="4.3.0" />
+    <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
+    <PackageReference Include="System.Xml.XPath.XmlDocument" Version="4.3.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="System.ComponentModel.TypeConverter" Version="4.3.0" />
+  </ItemGroup>
 
   <PropertyGroup>
-    <Version>1.0.3</Version>
-    <FileVersion>1.0.3</FileVersion>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <Version>1.0.4</Version>
+    <FileVersion>1.0.4</FileVersion>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
     <Authors>Vasily Kabanov</Authors>
-    <Description>A library for Excel export/import. Builds on top of EPPlus (Or EPPlus.Core), ExcelDataReader and AutoMapper, adding POCO mapping. The development goal is loose coupling between data mapping, formatting and data itself, code brevity and type safety.</Description>
-    <Copyright>Copyright (c) 2018 Vasily Kabanov</Copyright>
+    <Description>A library for Excel export/import. Builds on top of EPPlus, ExcelDataReader and AutoMapper, adding POCO mapping. The development goal is loose coupling between data mapping, formatting and data itself, code brevity and type safety.</Description>
+    <Copyright>Copyright (c) 2019 Vasily Kabanov</Copyright>
   </PropertyGroup>
 
   <PropertyGroup>
     <PackageId>ExcelEi</PackageId>
-    <PackageVersion>1.0.3-rc</PackageVersion>
+    <PackageVersion>1.0.4</PackageVersion>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Support .NET Standard 2.0 through EPPlus.Core.</PackageReleaseNotes>
+    <PackageReleaseNotes>Removed dependency on EPPlus.Core, upgraded EPPlus to v4.5.3.</PackageReleaseNotes>
     <PackageTags>excel import export OpenXML epplus</PackageTags>
     <PackageLicenseUrl>http://unlicense.org</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/v-kabanov/ExcelEi</PackageProjectUrl>

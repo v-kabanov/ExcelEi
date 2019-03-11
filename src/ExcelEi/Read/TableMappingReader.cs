@@ -67,7 +67,7 @@ namespace ExcelEi.Read
         {
             Check.DoRequireArgumentNotNull(propertyReference, nameof(propertyReference));
 
-            _mappingExpression.ForMember(propertyReference, opt => opt.ResolveUsing(new RowReaderValueResolver<T, V>(columnName)));
+            _mappingExpression.ForMember(propertyReference, opt => opt.MapFrom(new RowReaderValueResolver<T, V>(columnName)));
 
             RegisterMemberMapping(propertyReference, columnName);
 
@@ -78,7 +78,7 @@ namespace ExcelEi.Read
         {
             Check.DoRequireArgumentNotNull(propertyReference, nameof(propertyReference));
 
-            _mappingExpression.ForMember(propertyReference, opt => opt.ResolveUsing(new RowReaderValueResolver<T, V>(columnName, customConverter)));
+            _mappingExpression.ForMember(propertyReference, opt => opt.MapFrom(new RowReaderValueResolver<T, V>(columnName, customConverter)));
 
             RegisterMemberMapping(propertyReference, columnName);
 
