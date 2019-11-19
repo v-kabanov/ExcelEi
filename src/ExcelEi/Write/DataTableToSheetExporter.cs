@@ -80,7 +80,7 @@ namespace ExcelEi.Write
             {
                 var row = GetContiguousCurrentSheetCellRow();
 
-                var color = SheetExportConfig.DataRowCellBackgroundColorExtractor?.Invoke(dataItem, _currentSheetRowIndex);
+                var color = SheetExportConfig.DataRowCellBackgroundColorExtractor?.Invoke(dataItem, dataRowNumber);
                 if (color.HasValue)
                 {
                     var rowStyle = row.Style;
@@ -116,6 +116,7 @@ namespace ExcelEi.Write
                 }
 
                 ++_currentSheetRowIndex;
+                ++dataRowNumber;
                 if (_currentSheetRowIndex >= (MaxExcelSheetRowCount - 5))
                 {
 #if !DISABLE_LOG4NET

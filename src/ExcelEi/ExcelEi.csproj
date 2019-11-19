@@ -44,9 +44,9 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>1.0.4</Version>
-    <FileVersion>1.0.4</FileVersion>
-    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <Version>1.0.5</Version>
+    <FileVersion>1.0.5</FileVersion>
+    <AssemblyVersion>1.0.5.0</AssemblyVersion>
     <Authors>Vasily Kabanov</Authors>
     <Description>A library for Excel export/import. Builds on top of EPPlus, ExcelDataReader and AutoMapper, adding POCO mapping. The development goal is loose coupling between data mapping, formatting and data itself, code brevity and type safety.</Description>
     <Copyright>Copyright (c) 2019 Vasily Kabanov</Copyright>
@@ -54,9 +54,8 @@
 
   <PropertyGroup>
     <PackageId>ExcelEi</PackageId>
-    <PackageVersion>1.0.4</PackageVersion>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Removed dependency on EPPlus.Core, upgraded EPPlus to v4.5.3.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fixed per-column cell background color assignment.</PackageReleaseNotes>
     <PackageTags>excel import export OpenXML epplus</PackageTags>
     <PackageLicenseUrl>http://unlicense.org</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/v-kabanov/ExcelEi</PackageProjectUrl>
