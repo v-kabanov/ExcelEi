@@ -11,4 +11,4 @@ if not exist "%PACKOUT%" (
 
 echo Packing into %PACKOUT%
 
-dotnet pack "%~dp0src\ExcelEi\ExcelEi.csproj" -c Release --include-symbols --include-source -o "%PACKOUT%"
+dotnet pack "%~dp0src\ExcelEi\ExcelEi.csproj" -c Release --include-symbols -p:SymbolPackageFormat=snupkg --include-source -o "%PACKOUT%"
