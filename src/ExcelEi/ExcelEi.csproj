@@ -20,7 +20,7 @@
     <PackageReference Include="AutoMapper.Extensions.ExpressionMapping" Version="2.0.0" />
     <PackageReference Include="EPPlus" Version="4.5.3" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
-    <PackageReference Include="AutoMapper" Version="8.0.0" />
+    <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="ExcelDataReader" Version="3.4.0" />
     <PackageReference Include="log4net" Version="2.0.8" />
   </ItemGroup>
@@ -43,8 +43,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>1.0.5</Version>
-    <FileVersion>1.0.5</FileVersion>
+    <Version>1.0.6</Version>
+    <FileVersion>1.0.6</FileVersion>
     <AssemblyVersion>1.0.5.0</AssemblyVersion>
     <Authors>Vasily Kabanov</Authors>
     <Description>A library for Excel export/import. Builds on top of EPPlus, ExcelDataReader and AutoMapper, adding POCO mapping. The development goal is loose coupling between data mapping, formatting and data itself, code brevity and type safety.</Description>
@@ -54,7 +54,7 @@
   <PropertyGroup>
     <PackageId>ExcelEi</PackageId>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Fixed per-column cell background color assignment.</PackageReleaseNotes>
+    <PackageReleaseNotes>Upgrade AutoMapper dependency to v10.1.1 to avoid 'Method not found' exception when clients reference AutoMapper v10</PackageReleaseNotes>
     <PackageTags>excel import export OpenXML epplus</PackageTags>
     <PackageLicenseUrl>http://unlicense.org</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/v-kabanov/ExcelEi</PackageProjectUrl>
