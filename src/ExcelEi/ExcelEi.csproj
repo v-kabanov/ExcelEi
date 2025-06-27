@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='net461'">
@@ -43,8 +44,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>1.0.6</Version>
-    <FileVersion>1.0.6</FileVersion>
+    <Version>1.0.7</Version>
+    <FileVersion>1.0.7</FileVersion>
     <AssemblyVersion>1.0.5.0</AssemblyVersion>
     <Authors>Vasily Kabanov</Authors>
     <Description>A library for Excel export/import. Builds on top of EPPlus, ExcelDataReader and AutoMapper, adding POCO mapping. The development goal is loose coupling between data mapping, formatting and data itself, code brevity and type safety.</Description>
@@ -54,7 +55,7 @@
   <PropertyGroup>
     <PackageId>ExcelEi</PackageId>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Upgrade AutoMapper dependency to v10.1.1 to avoid 'Method not found' exception when clients reference AutoMapper v10</PackageReleaseNotes>
+    <PackageReleaseNotes>Add convenience method PocoExportConfigurator&lt;&gt;.AddColumnCompiled to incrementally/fluently add POCO columns with lambda value extractor (compiled).</PackageReleaseNotes>
     <PackageTags>excel import export OpenXML epplus</PackageTags>
     <PackageLicenseUrl>http://unlicense.org</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/v-kabanov/ExcelEi</PackageProjectUrl>

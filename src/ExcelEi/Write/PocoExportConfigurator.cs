@@ -112,6 +112,33 @@ namespace ExcelEi.Write
         }
 
         /// <summary>
+        ///     Add next column after the last existing one sourcing data for it from lambda expression.
+        /// </summary>
+        /// <typeparam name="TV">
+        ///     Source data type - type returned by <paramref name="valueGetter"/>.
+        /// </typeparam>
+        /// <param name="valueGetter">
+        ///     Mandatory, extracts data from data source objects.
+        /// </param>
+        /// <param name="sheetColumnCaption">
+        ///     Column header text in excel. Also goes into <see cref="IColumnDataSource"/>'s <see cref="IColumnDataSource.Name"/>.
+        /// </param>
+        /// <param name="autoFit">
+        ///     Optional, whether to fit column width to content after export (default is true).
+        /// </param>
+        /// <param name="format">
+        ///     Optional format for excel cells.
+        /// </param>
+        /// <returns>
+        ///     New column configuration (can be further customized).
+        /// </returns>
+        public PocoExportConfigurator<TE> AddColumnCompiled<TV>(Func<TE, TV> valueGetter, string sheetColumnCaption, bool? autoFit = null, string format = null)
+        {
+            AddColumnCompiledPolymorphic(valueGetter, Config.Columns.Count, sheetColumnCaption, autoFit, format);
+            return this;
+        }
+
+        /// <summary>
         ///     Add custom column sourcing data for it from lambda expression.
         ///     Use to produce e.g. sparse columns by forcing <paramref name="sheetColumnIndex"/>.
         /// </summary>
@@ -246,7 +273,7 @@ namespace ExcelEi.Write
         ///     actual value will not be cast during export.
         /// </typeparam>
         /// <param name="memberName">
-        ///     Field or property name; must be of primitive type, not a colection.
+        ///     Field or property name; must be of primitive type, not a collection.
         /// </param>
         /// <param name="sheetColumnCaption">
         ///     Column header text in excel.
